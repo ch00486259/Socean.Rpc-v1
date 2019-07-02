@@ -8,48 +8,55 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
   -------------------------------------------------------------------
   server sample :
 
-  1.先定义MessageProcessor
+  1.定义实体
   
-  public class Book
-  {
-      public string Name { get; set; }
-  }
+    public class Book
+    {
+        public string Name { get; set; }
+    }
+ 
+ --------------------------
+ 
+ 
+  定义MessageProcessor
+ 
+     public class DefaultMessageProcessor : IMessageProcessor
+     {
 
-  public class DefaultMessageProcessor : IMessageProcessor
-  {
-      public ResponseBase Process(string title, byte[] contentBytes)
-      {
-          if (title == "empty")
+          public ResponseBase Process(string title, byte[] contentBytes)
           {
-              return new EmptyResponse();
+
+              if (title == "book/name/change")
+              {
+                  var content = Encoding.UTF8.GetString(contentBytes);
+
+                  //here we use newtonsoft.Json serializer 
+                  //you need add refer "newtonsoft.Json.dll"
+                  var book = JsonConvert.DeserializeObject<Book>(content);
+                  book.Name = "new name";
+
+                  var responseContent = JsonConvert.SerializeObject(book);
+                  return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
+              }
+
+              if (title == "empty")
+              {
+                  return new EmptyResponse();
+              }
+
+              throw new Exception();
           }
-
-          if (title == "book/name/change")
-          {
-              var content = Encoding.UTF8.GetString(contentBytes);
-
-              //here we use newtonsoft.Json serializer 
-              //you need add refer "newtonsoft.Json.dll"
-              var book = JsonConvert.DeserializeObject<Book>(content);
-              book.Name = "new name";
-
-              var responseContent = JsonConvert.SerializeObject(book);
-              return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
-          }
-
-          throw new Exception();
       }
-  }
 
 
   2.启动服务
   
-  var server = new KeepAliveRpcServer();
-  server.Bind(IPAddress.Any, 11111);
-  server.AutoReconnect = true;
-  server.MessageProcessor = new DefaultMessageProcessor();
+    var server = new KeepAliveRpcServer();
+    server.Bind(IPAddress.Any, 11111);
+    server.AutoReconnect = true;
+    server.MessageProcessor = new DefaultMessageProcessor();
 
-  server.Start();  
+    server.Start();  
   
   -------------------------------------------------------------------
 
@@ -57,24 +64,24 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
   
   1.定义实体
   
-  public class Book
-  {
-      public string Name { get; set; }
-  }
+    public class Book
+    {
+        public string Name { get; set; }
+    }
  
  
   2.执行调用
   
-  public Book ChangeBookName(Book book)
-  {
-      using (var rpcClient = ShortConnectionRpcClientFactory.Create(IPAddress.Parse("127.0.0.1"), 11111))
-      {
-          var requestContent = JsonConvert.SerializeObject(book);
-          var bytes = rpcClient.Query("book/name/change", Encoding.UTF8.GetBytes(requestContent));
-          var content = Encoding.UTF8.GetString(bytes);
-          return JsonConvert.DeserializeObject<Book>(content);
-      }
-  }
+    public Book ChangeBookName(Book book)
+    {
+        using (var rpcClient = ShortConnectionRpcClientFactory.Create(IPAddress.Parse("127.0.0.1"), 11111))
+        {
+            var requestContent = JsonConvert.SerializeObject(book);
+            var bytes = rpcClient.Query("book/name/change", Encoding.UTF8.GetBytes(requestContent));
+            var content = Encoding.UTF8.GetString(bytes);
+            return JsonConvert.DeserializeObject<Book>(content);
+        }
+    }
     
   -------------------------------------------------------------------
   

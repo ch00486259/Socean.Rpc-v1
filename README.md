@@ -44,7 +44,7 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
                   return new EmptyResponse();
               }
 
-              throw new Exception();
+              return new ErrorResponse(ResponseErrorCode.SERVICE_NOT_FOUND);
           }
       }
 

@@ -77,8 +77,8 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
         using (var rpcClient = ShortConnectionRpcClientFactory.Create(IPAddress.Parse("127.0.0.1"), 11111))
         {
             var requestContent = JsonConvert.SerializeObject(book);
-            var bytes = rpcClient.Query("book/name/change", Encoding.UTF8.GetBytes(requestContent));
-            var content = Encoding.UTF8.GetString(bytes);
+            var response = rpcClient.Query("book/name/change", Encoding.UTF8.GetBytes(requestContent));
+            var content = Encoding.UTF8.GetString(response.ContentBytes);
             return JsonConvert.DeserializeObject<Book>(content);
         }
     }

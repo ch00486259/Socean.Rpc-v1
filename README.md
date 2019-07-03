@@ -89,7 +89,7 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
   
   NetworkSettings类可修改连接超时时间等参数
   
-  若果要进行性能测试，最好是在客户端把NetworkSettings.ClientDetectReceiveInterval设置成1，并提升线程优先级至ThreadPriority.Highest
+  若果要进行性能测试(load test)，最好是在客户端把NetworkSettings.ClientDetectReceiveInterval设置成1，并提升线程优先级至ThreadPriority.Highest
   
   
   Socean.Rpc.Core未来的变动会比较小，接下来会推出Socean.Rpc.Contract，以支持各种扩展，如MVC中的route等功能

@@ -108,7 +108,14 @@ namespace Socean.Rpc.Core
                 _serverListenBacklog = value;
             }
         }
+
+        public static TcpSendMode TcpRequestSendMode { get; set; } = TcpSendMode.Default;
     }
 
-    
+    public enum TcpSendMode
+    {
+        Default = 0,
+        Sync = 0,
+        Async = 1
+    }
 }

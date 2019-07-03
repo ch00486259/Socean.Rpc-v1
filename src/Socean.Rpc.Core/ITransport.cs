@@ -8,6 +8,8 @@ namespace Socean.Rpc.Core
 
         void Send(string title, byte[] contentBytes, byte stateCode, int messageId);
 
+        void AsyncSend(string title, byte[] contentBytes, byte stateCode, int messageId);
+
         void Close();
     }
 }

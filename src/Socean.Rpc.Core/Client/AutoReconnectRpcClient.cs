@@ -14,7 +14,7 @@ namespace Socean.Rpc.Core.Client
         private volatile int _messageId = 0;
         private readonly object _queryKey = new object();
         private TcpTransport _transport;
-        private QueryContext _queryContext;
+        private readonly QueryContext _queryContext;
 
         internal AutoReconnectRpcClient(IPAddress ip, int port)
         {
@@ -37,8 +37,11 @@ namespace Socean.Rpc.Core.Client
 
             var messageId = Interlocked.Increment(ref _messageId);
             _queryContext.Reset(messageId);
-            _transport.Send(title, contentBytes, 0, messageId);
-            //_transport.AsyncSend(title, contentBytes, 0, messageId);
+
+            if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                _transport.AsyncSend(title, contentBytes, 0, messageId);
+            else
+                _transport.Send(title, contentBytes, 0, messageId);
 
             var receiveData = await _queryContext.WaitForResultAsync();
             if (receiveData == null)
@@ -51,17 +54,17 @@ namespace Socean.Rpc.Core.Client
             if (stateCode != 0)
                 throw new Exception("query error:" + stateCode);
 
-            return receiveData.Content;
+            return receiveData.ContentBytes;
         }
 
-        public byte[] Query(string title, byte[] contentBytes)
+        public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
                 throw new Exception("RpcClient has been closed");
 
             lock (_queryKey)
             {
-                return QueryInternal(title, contentBytes);
+                return QueryInternal(title, contentBytes, throwIfErrorResponseCode);
 
                 //var task = QueryAsync(title, contentBytes);
                 //task.Wait();
@@ -92,7 +95,7 @@ namespace Socean.Rpc.Core.Client
             }
         }
 
-        private byte[] QueryInternal(string title, byte[] contentBytes)
+        private FrameData QueryInternal(string title, byte[] contentBytes, bool throwIfErrorResponseCode)
         {
             if (string.IsNullOrEmpty(title))
                 throw new Exception();
@@ -104,8 +107,11 @@ namespace Socean.Rpc.Core.Client
 
             var messageId = Interlocked.Increment(ref _messageId);
             _queryContext.Reset(_messageId);            
-            _transport.Send(title, contentBytes, 0, messageId);
-            //_transport.AsyncSend(title, contentBytes,0, messageId);
+
+            if(NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                _transport.AsyncSend(title, contentBytes,0, messageId);
+            else
+                _transport.Send(title, contentBytes, 0, messageId);
 
             var receiveData = _queryContext.WaitForResult();
             if (receiveData == null)
@@ -114,11 +120,14 @@ namespace Socean.Rpc.Core.Client
                 throw new Exception("query timeout");
             }
 
-            var stateCode = receiveData.StateCode;
-            if (stateCode != 0)
-                throw new Exception("query error:"+ stateCode);
+            if (throwIfErrorResponseCode)
+            {
+                var stateCode = receiveData.StateCode;
+                if (stateCode != 0)
+                    throw new Exception("query error:" + stateCode);
+            }
 
-            return receiveData.Content;
+            return receiveData;
         }
 
         public void Close()

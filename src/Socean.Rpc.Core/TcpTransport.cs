@@ -187,38 +187,15 @@ namespace Socean.Rpc.Core
 
         public void AsyncSend(string title, byte[] contentBytes, byte stateCode, int messageId)
         {
-            if (_state != 1)
-                throw new Exception();
-
-            if (title == null)
-                title = string.Empty;
-
-            if (title.Length >= 65535)
-                throw new Exception();
-
-            if (contentBytes == null)
-                contentBytes = FrameFormat.EmptyBytes;
-
-            var titleBytes = FrameFormat.GetTitleBytes(title);
-            var messageByteCount = FrameFormat.ComputeFrameByteCount(titleBytes, contentBytes);
-            var sendBuffer = GetSendBuffer(messageByteCount);
-            FrameFormat.FillFrameHeader(sendBuffer, titleBytes, contentBytes, stateCode, messageId);
-
-            if (title.Length + contentBytes.Length > 0)
-                FrameFormat.FillFrameBody(sendBuffer, titleBytes, contentBytes);
-
-            try
-            {
-                _socket.BeginSend(sendBuffer, 0, messageByteCount, SocketFlags.None, SendCallback, this);
-            }
-            catch
-            {
-                Close();
-                throw;
-            }
+            SendInternal(title, contentBytes, stateCode, messageId, TcpSendMode.Async);
         }
 
         public void Send(string title, byte[] contentBytes, byte stateCode, int messageId)
+        {
+            SendInternal(title, contentBytes, stateCode, messageId, TcpSendMode.Sync);
+        }
+
+        private void SendInternal(string title, byte[] contentBytes, byte stateCode, int messageId, TcpSendMode sendMode)
         {
             if (_state != 1)
                 throw new Exception();
@@ -240,14 +217,29 @@ namespace Socean.Rpc.Core
             if (title.Length + contentBytes.Length > 0)
                 FrameFormat.FillFrameBody(sendBuffer, titleBytes, contentBytes);
 
-            try
+            if (sendMode == TcpSendMode.Async)
             {
-                _socket.Send(sendBuffer, messageByteCount, SocketFlags.None);
+                try
+                {
+                    _socket.BeginSend(sendBuffer, 0, messageByteCount, SocketFlags.None, SendCallback, this);
+                }
+                catch
+                {
+                    Close();
+                    throw;
+                }
             }
-            catch
+            else
             {
-                Close();
-                throw;
+                try
+                {
+                    _socket.Send(sendBuffer, messageByteCount, SocketFlags.None);
+                }
+                catch
+                {
+                    Close();
+                    throw;
+                }
             }
         }
 

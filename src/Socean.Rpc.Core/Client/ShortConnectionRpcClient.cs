@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading;
+using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
@@ -21,12 +22,12 @@ namespace Socean.Rpc.Core.Client
             _client = _clientFactory.Create();
         }
 
-        public byte[] Query(string title, byte[] contentBytes)
+        public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
         {
             if (_client == null)
                 throw new Exception("client has been closed");
 
-            return _client.Query(title, contentBytes);
+            return _client.Query(title, contentBytes, throwIfErrorResponseCode);
         }
 
         public void Close()

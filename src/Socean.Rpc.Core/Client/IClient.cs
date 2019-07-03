@@ -1,10 +1,11 @@
 ﻿using System;
+using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
     public interface IClient:IDisposable
     {
-        byte[] Query(string title, byte[] contentBytes);
+        FrameData Query(string title, byte[] contentBytes,bool throwIfErrorResponseCode = false);
 
         void Close();
     }

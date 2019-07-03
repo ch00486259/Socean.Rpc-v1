@@ -167,7 +167,7 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                var response = Process(frameData.Title, frameData.Content, messageProcessor);
+                var response = Process(frameData.Title, frameData.ContentBytes, messageProcessor);
 
                 responseContent = response.Bytes;
                 responseCode = response.Code;
@@ -179,15 +179,20 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                if (responseCode != 0)
-                    serverTransport.Send(string.Empty, FrameFormat.EmptyBytes, responseCode, frameData.MessageId);
+                if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                {
+                    if (responseCode != 0)
+                        serverTransport.AsyncSend(string.Empty, FrameFormat.EmptyBytes, responseCode, frameData.MessageId);
+                    else
+                        serverTransport.AsyncSend(string.Empty, responseContent, 0, frameData.MessageId);
+                }
                 else
-                    serverTransport.Send(string.Empty, responseContent, 0, frameData.MessageId);
-
-                //if (responseCode != 0)
-                //    serverTransport.AsyncSend(string.Empty, FrameFormat.EmptyBytes,responseCode, frameData.MessageId,  SendCallback);
-                //else
-                //    serverTransport.AsyncSend(string.Empty,responseContent,0, frameData.MessageId,  SendCallback);
+                {
+                    if (responseCode != 0)
+                        serverTransport.Send(string.Empty, FrameFormat.EmptyBytes, responseCode, frameData.MessageId);
+                    else
+                        serverTransport.Send(string.Empty, responseContent, 0, frameData.MessageId);
+                }
             }
             catch
             {

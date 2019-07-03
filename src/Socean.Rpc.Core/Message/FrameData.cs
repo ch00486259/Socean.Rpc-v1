@@ -1,18 +1,18 @@
 ﻿namespace Socean.Rpc.Core.Message
 {
-    internal class FrameData
+    public class FrameData
     {
-        public FrameData(string title, byte[] content, byte stateCode, int messageId)
+        public FrameData(string title, byte[] contentBytes, byte stateCode, int messageId)
         {
             Title = title;
-            Content = content;
+            ContentBytes = contentBytes;
             StateCode = stateCode;
             MessageId = messageId;
         }
 
         public readonly string Title;
 
-        public readonly byte[] Content;
+        public readonly byte[] ContentBytes;
 
         public readonly byte StateCode;
 

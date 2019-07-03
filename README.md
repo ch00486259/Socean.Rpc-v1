@@ -3,6 +3,8 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
 
 一个高效的rpc框架，框架特点是 稳定和 高效，在双核i5笔记本电脑上,每秒处理请求数（rps）在11w左右,理论上在24核服务器上应该会更高，不过没实际测试过
 
+
+本框架性能可满足部分unity3d服务器端的需求，双核笔记本上支持10000长连接，且每秒10个请求，在性能好的服务器上，20000长连接且每秒30个请求应该是没问题的
   
   
   -------------------------------------------------------------------
@@ -15,7 +17,6 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
         public string Name { get; set; }
     }
  
- --------------------------
  
  
   定义MessageProcessor

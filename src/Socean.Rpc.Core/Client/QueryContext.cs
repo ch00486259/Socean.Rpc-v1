@@ -8,17 +8,24 @@ namespace Socean.Rpc.Core.Client
     internal class QueryContext
     {
         private FrameData _receiveData;
-        private int _messageId;
+        private volatile int _messageId;
+        private volatile bool _isCompleted = true;
 
         public void Reset(int messageId)
         {
             _messageId = messageId;
             _receiveData = null;
+            _isCompleted = false;
         }
 
         public void OnReceive(FrameData frameData)
         {
             _receiveData = frameData;
+        }
+
+        public bool IsCompleted
+        {
+            get => _isCompleted;
         }
 
         public FrameData WaitForResult()
@@ -35,9 +42,13 @@ namespace Socean.Rpc.Core.Client
                 Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
 
                 if (_receiveData != null)
+                {
+                    _isCompleted = true;
                     return _receiveData;
+                }
             }
 
+            _isCompleted = true;
             return null;
         }
 
@@ -55,9 +66,13 @@ namespace Socean.Rpc.Core.Client
                 await Task.Delay(NetworkSettings.ClientDetectReceiveInterval);
 
                 if (_receiveData != null)
+                {
+                    _isCompleted = true;
                     return _receiveData;
+                }
             }
 
+            _isCompleted = true;
             return null;
         }
     }

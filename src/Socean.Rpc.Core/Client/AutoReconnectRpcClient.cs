@@ -25,23 +25,32 @@ namespace Socean.Rpc.Core.Client
             _queryContext = new QueryContext();
         }
 
-        private async Task<byte[]> QueryAsync(string title, byte[] contentBytes)
+        private async Task<FrameData> QueryAsync(string title, byte[] contentBytes,bool throwIfErrorResponseCode = false)
         {
+            if (_transport == null)
+                throw new Exception("RpcClient has been closed");
+
             if (string.IsNullOrEmpty(title))
                 throw new Exception();
 
             if (title.Length > 65535)
                 throw new Exception();
 
-            CheckConnection();
+            lock (_queryKey)
+            {
+                if (_queryContext.IsCompleted == false)
+                    throw new Exception("request is not completed");
 
-            var messageId = Interlocked.Increment(ref _messageId);
-            _queryContext.Reset(messageId);
+                CheckConnection();
 
-            if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                _transport.AsyncSend(title, contentBytes, 0, messageId);
-            else
-                _transport.Send(title, contentBytes, 0, messageId);
+                var messageId = Interlocked.Increment(ref _messageId);
+                _queryContext.Reset(messageId);
+
+                if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                    _transport.AsyncSend(title, contentBytes, 0, messageId);
+                else
+                    _transport.Send(title, contentBytes, 0, messageId);
+            }
 
             var receiveData = await _queryContext.WaitForResultAsync();
             if (receiveData == null)
@@ -50,11 +59,14 @@ namespace Socean.Rpc.Core.Client
                 throw new Exception("query timeout");
             }
 
-            var stateCode = receiveData.StateCode;
-            if (stateCode != 0)
-                throw new Exception("query error:" + stateCode);
+            if (throwIfErrorResponseCode)
+            {
+                var stateCode = receiveData.StateCode;
+                if (stateCode != 0)
+                    throw new Exception("query error:" + stateCode);
+            }
 
-            return receiveData.ContentBytes;
+            return receiveData;
         }
 
         public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
@@ -62,14 +74,11 @@ namespace Socean.Rpc.Core.Client
             if (_transport == null)
                 throw new Exception("RpcClient has been closed");
 
-            lock (_queryKey)
-            {
-                return QueryInternal(title, contentBytes, throwIfErrorResponseCode);
+            return QueryInternal(title, contentBytes, throwIfErrorResponseCode);
 
-                //var task = QueryAsync(title, contentBytes);
-                //task.Wait();
-                //return task.Result;
-            }
+            //var task = QueryAsync(title, contentBytes, throwIfErrorResponseCode);
+            //task.Wait();
+            //return task.Result;
         }
 
         private void CheckConnection()
@@ -103,21 +112,29 @@ namespace Socean.Rpc.Core.Client
             if (title.Length > 65535)
                 throw new Exception();
 
-            CheckConnection();
+            FrameData receiveData;
 
-            var messageId = Interlocked.Increment(ref _messageId);
-            _queryContext.Reset(_messageId);            
-
-            if(NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                _transport.AsyncSend(title, contentBytes,0, messageId);
-            else
-                _transport.Send(title, contentBytes, 0, messageId);
-
-            var receiveData = _queryContext.WaitForResult();
-            if (receiveData == null)
+            lock (_queryKey)
             {
-                _transport.Close();
-                throw new Exception("query timeout");
+                if (_queryContext.IsCompleted == false)
+                    throw new Exception("request is not completed");
+
+                CheckConnection();
+
+                var messageId = Interlocked.Increment(ref _messageId);
+                _queryContext.Reset(_messageId);
+
+                if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                    _transport.AsyncSend(title, contentBytes, 0, messageId);
+                else
+                    _transport.Send(title, contentBytes, 0, messageId);
+
+                receiveData = _queryContext.WaitForResult();
+                if (receiveData == null)
+                {
+                    _transport.Close();
+                    throw new Exception("query timeout");
+                }
             }
 
             if (throwIfErrorResponseCode)

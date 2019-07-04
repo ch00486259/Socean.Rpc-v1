@@ -4,11 +4,37 @@ using System.Net;
 
 namespace Socean.Rpc.Core.Client
 {
-    public sealed class AutoReconnectRpcClientFactory: IClientFactory
+    public sealed class AutoReconnectRpcClientFactory
     {
         private static readonly ConcurrentDictionary<string, AutoReconnectRpcClientFactory> _factoryDictionary = new ConcurrentDictionary<string, AutoReconnectRpcClientFactory>();
 
-        public static AutoReconnectRpcClientFactory GetOrAddFactory(IPAddress ip, int port)
+        public static IClient Create(IPAddress ip, int port)
+        {
+            var factory = GetOrAddFactory(ip, port);
+            return factory.Create();
+        }
+
+        public static void TakeBack(IClient client)
+        {
+            var rpcClient = client as AutoReconnectRpcClient;
+            if (rpcClient == null)
+            {
+                try
+                {
+                    client.Close();
+                }
+                catch
+                {
+
+                }
+                return;
+            }
+
+            var factory = GetOrAddFactory(rpcClient.ServerIP, rpcClient.ServerPort);
+            factory.TakeBackInternal(rpcClient);
+        }
+
+        private static AutoReconnectRpcClientFactory GetOrAddFactory(IPAddress ip, int port)
         {
             string key = ip + "_" + port;
 
@@ -40,7 +66,7 @@ namespace Socean.Rpc.Core.Client
         private readonly int _port;
 
 
-        public IClient Create()
+        private IClient Create()
         {
             _clientQueue.TryDequeue(out var rpcClient);
             if (rpcClient != null)
@@ -49,27 +75,13 @@ namespace Socean.Rpc.Core.Client
             return new AutoReconnectRpcClient(_ip, _port);
         }
 
-        public void TakeBack(IClient client)
+        private void TakeBackInternal(AutoReconnectRpcClient rpcClient)
         {
-            var rpcClient = client as AutoReconnectRpcClient;
-            if (rpcClient == null)
-            {
-                try
-                {
-                    client.Close();
-                }
-                catch
-                {
-
-                }
-                return;
-            }
-
             if (_clientQueue.Count >= NetworkSettings.ClientCacheSize)
             {
                 try
                 {
-                    client.Close();
+                    rpcClient.Close();
                 }
                 catch
                 {
@@ -78,7 +90,7 @@ namespace Socean.Rpc.Core.Client
                 return;
             }
 
-            _clientQueue.Enqueue(client);
+            _clientQueue.Enqueue(rpcClient);
         }
     }
 }

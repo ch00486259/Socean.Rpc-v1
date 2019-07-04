@@ -11,15 +11,13 @@ namespace Socean.Rpc.Core.Client
         public int ServerPort { get; }
 
         private IClient _client;
-        private readonly IClientFactory _clientFactory;
 
         internal ShortConnectionRpcClient(IPAddress ip, int port)
         {
             ServerIP = ip;
             ServerPort = port;
 
-            _clientFactory = AutoReconnectRpcClientFactory.GetOrAddFactory(ip, port);
-            _client = _clientFactory.Create();
+            _client = AutoReconnectRpcClientFactory.Create(ip, port);
         }
 
         public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
@@ -39,7 +37,7 @@ namespace Socean.Rpc.Core.Client
             if (oldValue == null)
                 return;
 
-            _clientFactory.TakeBack(oldValue);
+            AutoReconnectRpcClientFactory.TakeBack(oldValue);
         }
 
         public void Dispose()

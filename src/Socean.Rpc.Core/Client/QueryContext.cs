@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Socean.Rpc.Core.Message;
@@ -30,49 +31,51 @@ namespace Socean.Rpc.Core.Client
 
         public FrameData WaitForResult()
         {
-            var loopCount = 0;
-            if (NetworkSettings.ReceiveTimeout > 0 && NetworkSettings.ClientDetectReceiveInterval > 0)
-                loopCount = NetworkSettings.ReceiveTimeout / NetworkSettings.ClientDetectReceiveInterval;
-
-            if (loopCount == 0)
-                loopCount = 1;
-
-            for (int i = 0; i < loopCount; i++)
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+            
+            while (true)
             {
+                if(stopWatch.ElapsedMilliseconds > NetworkSettings.ReceiveTimeout)
+                    break;
+
                 Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
 
                 if (_receiveData != null)
                 {
                     _isCompleted = true;
+                    stopWatch.Stop();
                     return _receiveData;
                 }
             }
 
             _isCompleted = true;
+            stopWatch.Stop();
             return null;
         }
 
         public async Task<FrameData> WaitForResultAsync()
         {
-            var loopCount = 0;
-            if (NetworkSettings.ReceiveTimeout > 0 && NetworkSettings.ClientDetectReceiveInterval > 0)
-                loopCount = NetworkSettings.ReceiveTimeout / NetworkSettings.ClientDetectReceiveInterval;
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
 
-            if (loopCount == 0)
-                loopCount = 1;
-
-            for (var i = 0; i < loopCount; i++)
+            while (true)
             {
+                if (stopWatch.ElapsedMilliseconds > NetworkSettings.ReceiveTimeout)
+                    break;
+
                 await Task.Delay(NetworkSettings.ClientDetectReceiveInterval);
 
                 if (_receiveData != null)
                 {
                     _isCompleted = true;
+                    stopWatch.Stop();
                     return _receiveData;
                 }
             }
 
             _isCompleted = true;
+            stopWatch.Stop();
             return null;
         }
     }

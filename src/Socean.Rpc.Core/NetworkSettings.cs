@@ -9,7 +9,7 @@ namespace Socean.Rpc.Core
         private static int _sendTimeout = 1000 * 10;
         private static int _writeBufferSize = 4096;
         private static int _readBufferSize = 4096;
-        private static int _clientCacheSize = 5;
+        private static int _clientCacheSize = 3;
         private static int _serverListenBacklog = 50000;
         private static int _reconnectInterval = 5000;
 
@@ -78,7 +78,7 @@ namespace Socean.Rpc.Core
             get => _clientCacheSize;
             set
             {
-                if (value <= 0)
+                if (value < 0)
                     throw new Exception();
 
                 _clientCacheSize = value;

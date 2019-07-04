@@ -18,7 +18,7 @@ namespace Socean.Rpc.Core
             get => _clientDetectReceiveInterval;
             set
             {
-                if (value <= 0)
+                if (value < 0)
                     throw new Exception();
 
                 _clientDetectReceiveInterval = value;

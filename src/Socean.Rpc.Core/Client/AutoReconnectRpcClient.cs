@@ -13,7 +13,7 @@ namespace Socean.Rpc.Core.Client
 
         private volatile int _messageId = 0;
         private readonly object _queryKey = new object();
-        private TcpTransport _transport;
+        private volatile TcpTransport _transport;
         private readonly QueryContext _queryContext;
 
         internal AutoReconnectRpcClient(IPAddress ip, int port)
@@ -36,23 +36,21 @@ namespace Socean.Rpc.Core.Client
             if (title.Length > 65535)
                 throw new Exception();
 
+            var messageId = Interlocked.Increment(ref _messageId);
+
             lock (_queryKey)
             {
-                if (_queryContext.IsCompleted == false)
-                    throw new Exception("request is not completed");
-
                 CheckConnection();
 
-                var messageId = Interlocked.Increment(ref _messageId);
                 _queryContext.Reset(messageId);
 
-                if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                    _transport.AsyncSend(title, contentBytes, 0, messageId);
-                else
+                //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                //    _transport.AsyncSend(title, contentBytes, 0, messageId);
+                //else
                     _transport.Send(title, contentBytes, 0, messageId);
             }
 
-            var receiveData = await _queryContext.WaitForResultAsync();
+            var receiveData = await _queryContext.WaitForResultAsync(messageId);
             if (receiveData == null)
             {
                 _transport.Close();
@@ -112,36 +110,32 @@ namespace Socean.Rpc.Core.Client
             if (title.Length > 65535)
                 throw new Exception();
 
-            FrameData receiveData;
+            var messageId = Interlocked.Increment(ref _messageId);
 
             lock (_queryKey)
             {
-                if (_queryContext.IsCompleted == false)
-                    throw new Exception("request is not completed");
-
                 CheckConnection();
 
-                var messageId = Interlocked.Increment(ref _messageId);
-                _queryContext.Reset(_messageId);
+                _queryContext.Reset(messageId);
 
-                if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                    _transport.AsyncSend(title, contentBytes, 0, messageId);
-                else
+                //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                //    _transport.AsyncSend(title, contentBytes, 0, messageId);
+                //else
                     _transport.Send(title, contentBytes, 0, messageId);
+            }
 
-                receiveData = _queryContext.WaitForResult();
-                if (receiveData == null)
-                {
-                    _transport.Close();
-                    throw new Exception("query timeout");
-                }
+            var receiveData = _queryContext.WaitForResult(messageId);
+            if (receiveData == null)
+            {
+                _transport.Close();
+                throw new Exception("query timeout");
             }
 
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
                 if (stateCode != 0)
-                    throw new Exception("query error:" + stateCode);
+                    throw new Exception("query failed, error code:" + stateCode);
             }
 
             return receiveData;

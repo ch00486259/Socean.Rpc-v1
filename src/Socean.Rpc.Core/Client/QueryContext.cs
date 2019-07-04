@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,28 +9,20 @@ namespace Socean.Rpc.Core.Client
 {
     internal class QueryContext
     {
-        private FrameData _receiveData;
-        private volatile int _messageId;
-        private volatile bool _isCompleted = true;
+        private readonly ConcurrentDictionary<int, FrameData> _receiveDataDictionary = new ConcurrentDictionary<int, FrameData>();
 
         public void Reset(int messageId)
         {
-            _messageId = messageId;
-            _receiveData = null;
-            _isCompleted = false;
+            _receiveDataDictionary[messageId] = null;
         }
 
         public void OnReceive(FrameData frameData)
         {
-            _receiveData = frameData;
+            if(frameData != null)
+                _receiveDataDictionary.TryUpdate(frameData.MessageId, frameData, null);
         }
 
-        public bool IsCompleted
-        {
-            get => _isCompleted;
-        }
-
-        public FrameData WaitForResult()
+        public FrameData WaitForResult(int messageId)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -41,20 +34,21 @@ namespace Socean.Rpc.Core.Client
 
                 Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
 
-                if (_receiveData != null)
+                _receiveDataDictionary.TryGetValue(messageId, out var receiveData);
+                if (receiveData != null)
                 {
-                    _isCompleted = true;
+                    _receiveDataDictionary.TryRemove(messageId, out var _);
                     stopWatch.Stop();
-                    return _receiveData;
+                    return receiveData;
                 }
             }
 
-            _isCompleted = true;
+            _receiveDataDictionary.TryRemove(messageId, out var _);
             stopWatch.Stop();
             return null;
         }
 
-        public async Task<FrameData> WaitForResultAsync()
+        public async Task<FrameData> WaitForResultAsync(int messageId)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -66,15 +60,16 @@ namespace Socean.Rpc.Core.Client
 
                 await Task.Delay(NetworkSettings.ClientDetectReceiveInterval);
 
-                if (_receiveData != null)
+                _receiveDataDictionary.TryGetValue(messageId, out var receiveData);
+                if (receiveData != null)
                 {
-                    _isCompleted = true;
+                    _receiveDataDictionary.TryRemove(messageId, out var _);
                     stopWatch.Stop();
-                    return _receiveData;
+                    return receiveData;
                 }
             }
 
-            _isCompleted = true;
+            _receiveDataDictionary.TryRemove(messageId, out var _);
             stopWatch.Stop();
             return null;
         }

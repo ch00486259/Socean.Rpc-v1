@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Socean.Rpc.Core
 {
@@ -114,6 +115,28 @@ namespace Socean.Rpc.Core
         {
             get { return _tcpRequestSendMode;}
             set { _tcpRequestSendMode = value; }
+        }
+
+        public static byte[] GetClientKeepAliveInfo()
+        {
+            var uintSize = Marshal.SizeOf(0);
+            byte[] inOptionValues = new byte[uintSize * 3];
+            BitConverter.GetBytes((uint)1).CopyTo(inOptionValues, 0);
+            BitConverter.GetBytes((uint)120000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize));
+            BitConverter.GetBytes((uint)2000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize) * 2);
+
+            return inOptionValues;
+        }
+
+        public static byte[] GetServerKeepAliveInfo()
+        {
+            var uintSize = Marshal.SizeOf(0);
+            byte[] inOptionValues = new byte[uintSize * 3];
+            BitConverter.GetBytes((uint)1).CopyTo(inOptionValues, 0);
+            BitConverter.GetBytes((uint)600000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize));
+            BitConverter.GetBytes((uint)2000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize) * 2);
+
+            return inOptionValues;
         }
     }
 

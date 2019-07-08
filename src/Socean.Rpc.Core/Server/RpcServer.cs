@@ -63,12 +63,14 @@ namespace Socean.Rpc.Core.Server
                 return;
             }
 
-            int backlog = NetworkSettings.ServerListenBacklog;
-
             try
             {
+                var inOptionValues = NetworkSettings.GetServerKeepAliveInfo();
+                var backlog = NetworkSettings.ServerListenBacklog;
+
                 _server = new TcpListener(new IPEndPoint(ServerIP, ServerPort));
                 _server.ExclusiveAddressUse = true;
+                _server.Server.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
                 _server.Start(backlog);
             }
             catch

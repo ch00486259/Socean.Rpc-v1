@@ -54,6 +54,9 @@ namespace Socean.Rpc.Core
             if (socket == null)
             {
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                var inOptionValues = NetworkSettings.GetClientKeepAliveInfo();
+                _socket.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
                 _socket.NoDelay = true;
                 _socket.ReceiveTimeout = NetworkSettings.ReceiveTimeout;
                 _socket.SendTimeout = NetworkSettings.SendTimeout;
@@ -66,6 +69,17 @@ namespace Socean.Rpc.Core
             }
 
             BeginReceive();
+        }
+
+        public bool? IsSocketConnected
+        {
+            get
+            {
+                if (_socket == null)
+                    return null;
+
+                return _socket.Connected;
+            }
         }
 
         private void BeginReceive()

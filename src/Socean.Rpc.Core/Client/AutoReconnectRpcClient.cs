@@ -81,7 +81,7 @@ namespace Socean.Rpc.Core.Client
 
         private void CheckConnection()
         {
-            if (_transport.State == -1)
+            if (_transport.State == -1 || _transport.IsSocketConnected == false)
             {
                 try
                 {

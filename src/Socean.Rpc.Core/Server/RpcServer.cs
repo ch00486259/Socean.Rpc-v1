@@ -30,7 +30,6 @@ namespace Socean.Rpc.Core.Server
         /// </summary>
         private volatile int _serverState = 0;
 
-        private readonly ConcurrentDictionary<ITransport, int> _transportDictionary = new ConcurrentDictionary<ITransport, int>();
         private TcpListener _server;
 
         public void Bind(IPAddress ip, int port)
@@ -46,7 +45,7 @@ namespace Socean.Rpc.Core.Server
 
         public int GetClientCount()
         {
-            return _transportDictionary.Count;
+            return 0;
         }
 
         public void Start()
@@ -136,26 +135,23 @@ namespace Socean.Rpc.Core.Server
                 return;
             }
 
-            client.NoDelay = true;
-
-            var tcpTransport = new TcpTransport(this, ipEndPoint.Address, ipEndPoint.Port, client);
-            _transportDictionary.TryAdd(tcpTransport, 0);
+            var tcpTransport = new TcpTransport(this, ipEndPoint.Address, ipEndPoint.Port);
 
             try
             {
-                tcpTransport.Init();
+                tcpTransport.Init(client);
             }
             catch
             {
                 try
                 {
                     tcpTransport.Close();
-                    return;
                 }
                 catch
                 {
 
                 }
+                return;
             }
         }
 
@@ -227,10 +223,9 @@ namespace Socean.Rpc.Core.Server
 
         internal override void CloseTransport(ITransport transport)
         {
-            if (transport == null)
+            var tcpTransport = transport as TcpTransport;
+            if (tcpTransport == null)
                 return;
-
-            _transportDictionary.TryRemove(transport, out var _);
         }
 
         private static ResponseBase Process(string title, byte[] contentBytes, IMessageProcessor messageProcessor)
@@ -263,18 +258,6 @@ namespace Socean.Rpc.Core.Server
             catch
             {
 
-            }
-
-            var transportList = _transportDictionary.Keys.ToList();
-            foreach (var transport in transportList)
-            {
-                try
-                {
-                    transport.Close();
-                }
-               catch
-                {
-                }
             }
 
             LogAgent.Info("server closed");

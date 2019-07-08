@@ -12,8 +12,12 @@ namespace Socean.Rpc.Core
 
         }
 
-        internal static KeepAliveMonitor Instance { get; } = new KeepAliveMonitor();
+        internal static KeepAliveMonitor Instance
+        {
+            get { return _instance; }
+        }
 
+        private static readonly KeepAliveMonitor _instance = new KeepAliveMonitor();
 
         private readonly ConcurrentDictionary<IKeepAlive, int> _observerDictionary = new ConcurrentDictionary<IKeepAlive, int>();
         private volatile int _state = 0;

@@ -33,7 +33,7 @@ namespace Socean.Rpc.Core.Client
                     break;
 
                 Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
-
+              
                 _receiveDataDictionary.TryGetValue(messageId, out var receiveData);
                 if (receiveData != null)
                 {

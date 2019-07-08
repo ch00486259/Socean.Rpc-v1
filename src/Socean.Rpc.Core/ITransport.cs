@@ -4,7 +4,7 @@ namespace Socean.Rpc.Core
 {
     public interface ITransport : IDisposable
     {
-        void Init();
+        //void Init();
 
         void Send(string title, byte[] contentBytes, byte stateCode, int messageId);
 

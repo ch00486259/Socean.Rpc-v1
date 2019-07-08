@@ -8,17 +8,7 @@ namespace Socean.Rpc.Core
 {
     internal class TcpTransport: ITransport
     { 
-        internal TcpTransport(TransportHostBase transportHost, IPAddress ip, int port):this(transportHost, null,ip, port)
-        {
-           
-        }
-
-        internal TcpTransport(TransportHostBase transportHost, IPAddress ip, int port,Socket socket):this(transportHost, socket,ip, port)
-        {
-          
-        }
-
-        private TcpTransport(TransportHostBase transportHost, Socket socket, IPAddress ip, int port )
+        internal TcpTransport(TransportHostBase transportHost, IPAddress ip, int port )
         {
             RemoteIP = ip;
             RemotePort = port;
@@ -27,7 +17,6 @@ namespace Socean.Rpc.Core
             _transportHost = transportHost;
 
             _state = 0;
-            _socket = socket;
             _receiveProcessor = new ReceiveProcessor();
             _writeBufferCache = new byte[NetworkSettings.WriteBufferSize];
         }
@@ -53,7 +42,7 @@ namespace Socean.Rpc.Core
         /// </summary>
         private volatile int _state;
 
-        public void Init()
+        public void Init(Socket socket = null)
         {
             if (_state != 0)
                 return;
@@ -62,13 +51,18 @@ namespace Socean.Rpc.Core
             if (oldValue == 1)
                 return;
 
-            if (_socket == null)
+            if (socket == null)
             {
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _socket.NoDelay = true;
                 _socket.ReceiveTimeout = NetworkSettings.ReceiveTimeout;
                 _socket.SendTimeout = NetworkSettings.SendTimeout;
                 _socket.Connect(RemoteIP, RemotePort);
+            }
+            else
+            {
+                _socket = socket;
+                _socket.NoDelay = true;
             }
 
             BeginReceive();

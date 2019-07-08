@@ -12,10 +12,11 @@ namespace Socean.Rpc.Core
         private static int _clientCacheSize = 3;
         private static int _serverListenBacklog = 50000;
         private static int _reconnectInterval = 5000;
+        private static TcpSendMode _tcpRequestSendMode = TcpSendMode.Default;
 
         public static int ClientDetectReceiveInterval
         {
-            get => _clientDetectReceiveInterval;
+            get { return _clientDetectReceiveInterval;}
             set
             {
                 if (value < 0)
@@ -27,7 +28,7 @@ namespace Socean.Rpc.Core
 
         public static int ReceiveTimeout
         {
-            get => _receiveTimeout;
+            get { return _receiveTimeout;}
             set
             {
                 if (value <= 0)
@@ -39,7 +40,7 @@ namespace Socean.Rpc.Core
 
         public static int SendTimeout
         {
-            get => _sendTimeout;
+            get { return _sendTimeout;}
             set
             {
                 if (value <= 0)
@@ -51,7 +52,7 @@ namespace Socean.Rpc.Core
 
         public static int WriteBufferSize
         {
-            get => _writeBufferSize;
+            get { return _writeBufferSize;}
             set
             {
                 if (value < 200)
@@ -63,7 +64,7 @@ namespace Socean.Rpc.Core
 
         public static int ReadBufferSize
         {
-            get => _readBufferSize;
+            get { return _readBufferSize;}
             set
             {
                 if (value < 200)
@@ -75,7 +76,7 @@ namespace Socean.Rpc.Core
 
         public static int ClientCacheSize
         {
-            get => _clientCacheSize;
+            get { return _clientCacheSize;}
             set
             {
                 if (value < 0)
@@ -87,7 +88,7 @@ namespace Socean.Rpc.Core
 
         public static int ReconnectInterval
         {
-            get => _reconnectInterval;
+            get { return _reconnectInterval;}
             set
             {
                 if (value <= 0)
@@ -99,7 +100,7 @@ namespace Socean.Rpc.Core
 
         public static int ServerListenBacklog
         {
-            get => _serverListenBacklog;
+            get { return _serverListenBacklog;}
             set
             {
                 if (value <= 0)
@@ -109,7 +110,11 @@ namespace Socean.Rpc.Core
             }
         }
 
-        public static TcpSendMode TcpRequestSendMode { get; set; } = TcpSendMode.Default;
+        public static TcpSendMode TcpRequestSendMode
+        {
+            get { return _tcpRequestSendMode;}
+            set { _tcpRequestSendMode = value; }
+        }
     }
 
     public enum TcpSendMode

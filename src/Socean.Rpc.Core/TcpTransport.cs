@@ -192,17 +192,17 @@ namespace Socean.Rpc.Core
             serverTransport.OnReceive(receiveData);
         }
 
-        public void AsyncSend(string title, byte[] contentBytes, byte stateCode, int messageId)
+        public void AsyncSend(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId)
         {
-            SendInternal(title, contentBytes, stateCode, messageId, TcpSendMode.Async);
+            SendInternal(extentionBytes,title, contentBytes, stateCode, messageId, TcpSendMode.Async);
         }
 
-        public void Send(string title, byte[] contentBytes, byte stateCode, int messageId)
+        public void Send(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId)
         {
-            SendInternal(title, contentBytes, stateCode, messageId, TcpSendMode.Sync);
+            SendInternal(extentionBytes,title, contentBytes, stateCode, messageId, TcpSendMode.Sync);
         }
 
-        private void SendInternal(string title, byte[] contentBytes, byte stateCode, int messageId, TcpSendMode sendMode)
+        private void SendInternal(byte[] extentionBytes,string title, byte[] contentBytes, byte stateCode, int messageId, TcpSendMode sendMode)
         {
             if (_state != 1)
                 throw new Exception();
@@ -213,16 +213,17 @@ namespace Socean.Rpc.Core
             if (title.Length >= 65535)
                 throw new Exception();
 
+            if (extentionBytes == null)
+                extentionBytes = FrameFormat.EmptyBytes;
+
             if (contentBytes == null)
                 contentBytes = FrameFormat.EmptyBytes;
 
             var titleBytes = FrameFormat.GetTitleBytes(title);
-            var messageByteCount = FrameFormat.ComputeFrameByteCount(titleBytes, contentBytes);
+            var messageByteCount = FrameFormat.ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
             var sendBuffer = GetSendBuffer(messageByteCount);
-            FrameFormat.FillFrameHeader(sendBuffer, titleBytes, contentBytes, stateCode, messageId);
-
-            if (title.Length + contentBytes.Length > 0)
-                FrameFormat.FillFrameBody(sendBuffer, titleBytes, contentBytes);
+            FrameFormat.FillFrameHeader(sendBuffer, extentionBytes, titleBytes, contentBytes, stateCode, messageId);
+            FrameFormat.FillFrameBody(sendBuffer, extentionBytes, titleBytes, contentBytes);
 
             if (sendMode == TcpSendMode.Async)
             {
@@ -284,9 +285,9 @@ namespace Socean.Rpc.Core
 
     public interface ITransport 
     {
-        void Send(string title, byte[] contentBytes, byte stateCode, int messageId);
+        void Send(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
 
-        void AsyncSend(string title, byte[] contentBytes, byte stateCode, int messageId);
+        void AsyncSend(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
 
         void Close();
     }

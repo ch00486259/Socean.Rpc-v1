@@ -25,7 +25,7 @@ namespace Socean.Rpc.Core.Client
             _queryContext = new QueryContext();
         }
 
-        internal async Task<FrameData> QueryAsync(string title, byte[] contentBytes,bool throwIfErrorResponseCode = false)
+        internal async Task<FrameData> QueryAsync(byte[] extentionBytes, string title, byte[] contentBytes,bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
                 throw new Exception("RpcClient has been closed");
@@ -45,9 +45,9 @@ namespace Socean.Rpc.Core.Client
                 _queryContext.Reset(messageId);
 
                 //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                //    _transport.AsyncSend(title, contentBytes, 0, messageId);
+                //    _transport.AsyncSend(extentionBytes,title, contentBytes, 0, messageId);
                 //else
-                    _transport.Send(title, contentBytes, 0, messageId);
+                _transport.Send(extentionBytes,title, contentBytes, 0, messageId);
             }
 
             var receiveData = await _queryContext.WaitForResultAsync(messageId);
@@ -69,10 +69,15 @@ namespace Socean.Rpc.Core.Client
 
         public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
         {
+            return Query(null, title, contentBytes, throwIfErrorResponseCode);
+        }
+
+        public FrameData Query(byte[] extentionBytes, string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
+        {
             if (_transport == null)
                 throw new Exception("RpcClient has been closed");
 
-            return QueryInternal(title, contentBytes, throwIfErrorResponseCode);
+            return QueryInternal(extentionBytes,title, contentBytes, throwIfErrorResponseCode);
 
             //var task = QueryAsync(title, contentBytes, throwIfErrorResponseCode);
             //task.Wait();
@@ -105,7 +110,7 @@ namespace Socean.Rpc.Core.Client
             }
         }
 
-        private FrameData QueryInternal(string title, byte[] contentBytes, bool throwIfErrorResponseCode)
+        private FrameData QueryInternal(byte[] extentionBytes, string title, byte[] contentBytes, bool throwIfErrorResponseCode)
         {
             if (string.IsNullOrEmpty(title))
                 throw new Exception();
@@ -122,9 +127,9 @@ namespace Socean.Rpc.Core.Client
                 _queryContext.Reset(messageId);
 
                 //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                //    _transport.AsyncSend(title, contentBytes, 0, messageId);
+                //    _transport.AsyncSend(extentionBytes,title, contentBytes, 0, messageId);
                 //else
-                    _transport.Send(title, contentBytes, 0, messageId);
+                _transport.Send(extentionBytes,title, contentBytes, 0, messageId);
             }
 
             var receiveData = _queryContext.WaitForResult(messageId);

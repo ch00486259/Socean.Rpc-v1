@@ -159,6 +159,7 @@ namespace Socean.Rpc.Core.Server
         private static void ProcessReceive(TcpTransport serverTransport, FrameData frameData,
             IMessageProcessor messageProcessor)
         {
+            byte[] responseExtention = null;
             byte[] responseContent = null;
             byte responseCode = 0;
 
@@ -166,11 +167,13 @@ namespace Socean.Rpc.Core.Server
             {
                 var response = Process(frameData, messageProcessor);
 
-                responseContent = response.Bytes ?? FrameFormat.EmptyBytes;
+                responseExtention = response.ExtentionBytes ?? FrameFormat.EmptyBytes;
+                responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
                 responseCode = response.Code;
             }
             catch
             {
+                responseExtention = FrameFormat.EmptyBytes;
                 responseContent = FrameFormat.EmptyBytes;
                 responseCode = ResponseCode.SERVER_INTERNAL_ERROR;
             }
@@ -179,11 +182,11 @@ namespace Socean.Rpc.Core.Server
             {
                 if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
                 {
-                    serverTransport.AsyncSend(string.Empty, responseContent, responseCode, frameData.MessageId);
+                    serverTransport.AsyncSend(responseExtention, string.Empty, responseContent, responseCode, frameData.MessageId);
                 }
                 else
                 {
-                    serverTransport.Send(string.Empty, responseContent, responseCode, frameData.MessageId);
+                    serverTransport.Send(responseExtention, string.Empty, responseContent, responseCode, frameData.MessageId);
                 }
             }
             catch
@@ -220,7 +223,7 @@ namespace Socean.Rpc.Core.Server
             if (string.IsNullOrEmpty(frameData.Title))
                 return new ErrorResponse(ResponseCode.SERVICE_TITLE_ERROR);
 
-            return messageProcessor.Process(frameData.Title, frameData.ContentBytes);
+            return messageProcessor.Process(frameData);
         }
 
         internal override void CloseTransport(TcpTransport transport)

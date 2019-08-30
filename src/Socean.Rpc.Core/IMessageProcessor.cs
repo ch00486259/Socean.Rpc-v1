@@ -1,8 +1,10 @@
-﻿namespace Socean.Rpc.Core
+﻿using Socean.Rpc.Core.Message;
+
+namespace Socean.Rpc.Core
 {
     public interface IMessageProcessor
     {
-        ResponseBase Process(string title, byte[] contentBytes);
+        ResponseBase Process(FrameData frameData);
     }
     
 }

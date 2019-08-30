@@ -4,25 +4,23 @@ namespace Socean.Rpc.Core
 {
     public abstract class ResponseBase
     {
-        protected ResponseBase(byte code)
+        protected ResponseBase(byte[] extentionBytes, byte[] contentBytes, byte code)
         {
             Code = code;
-            Bytes = FrameFormat.EmptyBytes;
+            ContentBytes = contentBytes ?? FrameFormat.EmptyBytes;
+            ExtentionBytes = extentionBytes ?? FrameFormat.EmptyBytes;
         }
 
-        protected ResponseBase(byte[] bytes)
-        {
-            Bytes = bytes;
-        }
+        public byte[] ExtentionBytes { get; }
 
-        public byte[] Bytes { get; }
+        public byte[] ContentBytes { get; }
 
         public byte Code { get; }
     }
 
     public class ErrorResponse : ResponseBase
     {
-        public ErrorResponse(byte code) : base(code)
+        public ErrorResponse(byte code) : base(FrameFormat.EmptyBytes, FrameFormat.EmptyBytes, code)
         {
 
         }
@@ -30,7 +28,7 @@ namespace Socean.Rpc.Core
 
     public class BytesResponse : ResponseBase
     {
-        public BytesResponse(byte[] bytes) : base(bytes)
+        public BytesResponse(byte[] bytes) : base(FrameFormat.EmptyBytes,bytes,ResponseCode.OK)
         {
 
         }
@@ -38,7 +36,15 @@ namespace Socean.Rpc.Core
 
     public class EmptyResponse : ResponseBase
     {
-        public EmptyResponse() : base(FrameFormat.EmptyBytes)
+        public EmptyResponse() : base(FrameFormat.EmptyBytes, FrameFormat.EmptyBytes, ResponseCode.OK)
+        {
+
+        }
+    }
+
+    public class CustomResponse : ResponseBase
+    {
+        public CustomResponse(byte[] extentionBytes, byte[] contentBytes, byte code) : base(extentionBytes, contentBytes, code)
         {
 
         }

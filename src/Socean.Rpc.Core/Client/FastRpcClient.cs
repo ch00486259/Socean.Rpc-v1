@@ -26,15 +26,23 @@ namespace Socean.Rpc.Core.Client
             if (_client == null)
                 throw new Exception("client has been closed");
 
-            return _client.Query(title, contentBytes, throwIfErrorResponseCode);
+            return _client.Query(null, title, contentBytes, throwIfErrorResponseCode);
         }
 
-        internal async Task<FrameData> QueryAsync(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
+        public FrameData Query(byte[] extentionBytes, string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
         {
             if (_client == null)
                 throw new Exception("client has been closed");
 
-            return await _client.QueryAsync(title, contentBytes, throwIfErrorResponseCode);
+            return _client.Query(extentionBytes,title, contentBytes, throwIfErrorResponseCode);
+        }
+
+        internal async Task<FrameData> QueryAsync(byte[] extentionBytes, string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
+        {
+            if (_client == null)
+                throw new Exception("client has been closed");
+
+            return await _client.QueryAsync(extentionBytes,title, contentBytes, throwIfErrorResponseCode);
         }
 
         public void Close()

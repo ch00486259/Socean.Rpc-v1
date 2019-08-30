@@ -2,13 +2,16 @@
 {
     public class FrameData
     {
-        public FrameData(string title, byte[] contentBytes, byte stateCode, int messageId)
+        public FrameData(byte[] extention,string title, byte[] contentBytes, byte stateCode, int messageId)
         {
+            Extention = extention;
             Title = title;
             ContentBytes = contentBytes;
             StateCode = stateCode;
             MessageId = messageId;
         }
+
+        public readonly byte[] Extention;
 
         public readonly string Title;
 

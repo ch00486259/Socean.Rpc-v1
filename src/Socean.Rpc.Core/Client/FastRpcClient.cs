@@ -5,19 +5,19 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    public sealed class ShortConnectionRpcClient: IClient
+    public sealed class FastRpcClient: IClient
     {
         public IPAddress ServerIP { get; }
         public int ServerPort { get; }
 
         private IClient _client;
 
-        internal ShortConnectionRpcClient(IPAddress ip, int port)
+        public FastRpcClient(IPAddress ip, int port)
         {
             ServerIP = ip;
             ServerPort = port;
 
-            _client = AutoReconnectRpcClientFactory.Create(ip, port);
+            _client = SimpleRpcClientFactory.Create(ip, port);
         }
 
         public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
@@ -37,7 +37,7 @@ namespace Socean.Rpc.Core.Client
             if (oldValue == null)
                 return;
 
-            AutoReconnectRpcClientFactory.TakeBack(oldValue);
+            SimpleRpcClientFactory.TakeBack(oldValue);
         }
 
         public void Dispose()

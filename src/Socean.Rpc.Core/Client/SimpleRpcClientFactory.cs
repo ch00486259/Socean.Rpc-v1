@@ -4,9 +4,9 @@ using System.Net;
 
 namespace Socean.Rpc.Core.Client
 {
-    public sealed class AutoReconnectRpcClientFactory
+    public sealed class SimpleRpcClientFactory
     {
-        private static readonly ConcurrentDictionary<string, AutoReconnectRpcClientFactory> _factoryDictionary = new ConcurrentDictionary<string, AutoReconnectRpcClientFactory>();
+        private static readonly ConcurrentDictionary<string, SimpleRpcClientFactory> _factoryDictionary = new ConcurrentDictionary<string, SimpleRpcClientFactory>();
 
         public static IClient Create(IPAddress ip, int port)
         {
@@ -16,7 +16,7 @@ namespace Socean.Rpc.Core.Client
 
         public static void TakeBack(IClient client)
         {
-            var rpcClient = client as AutoReconnectRpcClient;
+            var rpcClient = client as SimpleRpcClient;
             if (rpcClient == null)
             {
                 try
@@ -34,17 +34,17 @@ namespace Socean.Rpc.Core.Client
             factory.TakeBackInternal(rpcClient);
         }
 
-        private static AutoReconnectRpcClientFactory GetOrAddFactory(IPAddress ip, int port)
+        private static SimpleRpcClientFactory GetOrAddFactory(IPAddress ip, int port)
         {
             string key = ip + "_" + port;
 
-            AutoReconnectRpcClientFactory factory = null;
+            SimpleRpcClientFactory factory = null;
 
             _factoryDictionary.TryGetValue(key, out factory);
             if (factory != null)
                 return factory;
 
-            _factoryDictionary.TryAdd(key, new AutoReconnectRpcClientFactory(ip, port));
+            _factoryDictionary.TryAdd(key, new SimpleRpcClientFactory(ip, port));
 
             _factoryDictionary.TryGetValue(key, out factory);
             if (factory != null)
@@ -55,7 +55,7 @@ namespace Socean.Rpc.Core.Client
 
 
 
-        private AutoReconnectRpcClientFactory(IPAddress ip, int port)
+        private SimpleRpcClientFactory(IPAddress ip, int port)
         {
             this._ip = ip;
             this._port = port;
@@ -72,10 +72,10 @@ namespace Socean.Rpc.Core.Client
             if (rpcClient != null)
                 return rpcClient;
 
-            return new AutoReconnectRpcClient(_ip, _port);
+            return new SimpleRpcClient(_ip, _port);
         }
 
-        private void TakeBackInternal(AutoReconnectRpcClient rpcClient)
+        private void TakeBackInternal(SimpleRpcClient rpcClient)
         {
             if (_clientQueue.Count >= NetworkSettings.ClientCacheSize)
             {

@@ -6,7 +6,7 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    public sealed class AutoReconnectRpcClient: TransportHostBase,IClient
+    public sealed class SimpleRpcClient: TcpTransportHostBase,IClient
     {
         public IPAddress ServerIP { get; }
         public int ServerPort { get; }
@@ -16,7 +16,7 @@ namespace Socean.Rpc.Core.Client
         private volatile TcpTransport _transport;
         private readonly QueryContext _queryContext;
 
-        internal AutoReconnectRpcClient(IPAddress ip, int port)
+        public SimpleRpcClient(IPAddress ip, int port)
         {
             ServerIP = ip;
             ServerPort = port;
@@ -160,12 +160,12 @@ namespace Socean.Rpc.Core.Client
             Close();
         }
 
-        internal override void ReceiveMessage(ITransport tcpTransport, FrameData frameData)
+        internal override void ReceiveMessage(TcpTransport tcpTransport, FrameData frameData)
         {
             _queryContext.OnReceive(frameData);
         }
 
-        internal override void CloseTransport(ITransport tcpTransport)
+        internal override void CloseTransport(TcpTransport tcpTransport)
         {
 
         }

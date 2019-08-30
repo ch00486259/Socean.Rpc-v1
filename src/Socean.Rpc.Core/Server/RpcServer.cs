@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -8,7 +6,7 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Server
 {
-    public sealed class RpcServer: TransportHostBase,IServer
+    public sealed class RpcServer: TcpTransportHostBase,IServer
     {
         public RpcServer() 
         {          
@@ -157,7 +155,7 @@ namespace Socean.Rpc.Core.Server
             }
         }
 
-        private static void ProcessReceive(ITransport serverTransport, FrameData frameData,
+        private static void ProcessReceive(TcpTransport serverTransport, FrameData frameData,
             IMessageProcessor messageProcessor)
         {
             byte[] responseContent = null;
@@ -167,29 +165,24 @@ namespace Socean.Rpc.Core.Server
             {
                 var response = Process(frameData.Title, frameData.ContentBytes, messageProcessor);
 
-                responseContent = response.Bytes;
+                responseContent = response.Bytes ?? FrameFormat.EmptyBytes;
                 responseCode = response.Code;
             }
             catch
             {
-                responseCode = ResponseErrorCode.SERVER_INTERNAL_ERROR;
+                responseContent = FrameFormat.EmptyBytes;
+                responseCode = ResponseCode.SERVER_INTERNAL_ERROR;
             }
 
             try
             {
-                if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
+                if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
                 {
-                    if (responseCode != 0)
-                        serverTransport.AsyncSend(string.Empty, FrameFormat.EmptyBytes, responseCode, frameData.MessageId);
-                    else
-                        serverTransport.AsyncSend(string.Empty, responseContent, 0, frameData.MessageId);
+                    serverTransport.AsyncSend(string.Empty, responseContent, responseCode, frameData.MessageId);
                 }
                 else
                 {
-                    if (responseCode != 0)
-                        serverTransport.Send(string.Empty, FrameFormat.EmptyBytes, responseCode, frameData.MessageId);
-                    else
-                        serverTransport.Send(string.Empty, responseContent, 0, frameData.MessageId);
+                    serverTransport.Send(string.Empty, responseContent, responseCode, frameData.MessageId);
                 }
             }
             catch
@@ -199,46 +192,40 @@ namespace Socean.Rpc.Core.Server
             }
         }
 
-        private static void ProcessReceiveAsync(ITransport serverTransport, FrameData frameData, IMessageProcessor messageProcessor)
+        internal override void ReceiveMessage(TcpTransport serverTransport, FrameData frameData)
         {
             ThreadPool.QueueUserWorkItem((item) =>
             {
-                var tuple = item as Tuple<ITransport, FrameData, IMessageProcessor>;
+                var tuple = item as Tuple<TcpTransport, FrameData, IMessageProcessor>;
                 var serverTransport1 = tuple.Item1;
                 var frameData1 = tuple.Item2;
                 var messageProcessor1 = tuple.Item3;
 
                 ProcessReceive(serverTransport1, frameData1, messageProcessor1);
 
-            }, new Tuple<ITransport, FrameData, IMessageProcessor>(serverTransport, frameData, messageProcessor));
+            }, new Tuple<TcpTransport, FrameData, IMessageProcessor>(serverTransport, frameData, MessageProcessor));
 
             //Task.Run(() =>
             //{
-            //    ProcessReceive(serverTransport, frameData, messageProcessor);
+            //    ProcessReceive(serverTransport, frameData, MessageProcessor);
             //});
-        }
-
-        internal override void ReceiveMessage(ITransport tcpTransport, FrameData frameData)
-        {
-            ProcessReceiveAsync(tcpTransport, frameData, MessageProcessor);
-        }
-
-        internal override void CloseTransport(ITransport transport)
-        {
-            var tcpTransport = transport as TcpTransport;
-            if (tcpTransport == null)
-                return;
         }
 
         private static ResponseBase Process(string title, byte[] contentBytes, IMessageProcessor messageProcessor)
         {
             if (messageProcessor == null)
-                return new ErrorResponse(ResponseErrorCode.SERVICE_NOT_FOUND);
+                return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
 
             if (string.IsNullOrEmpty(title))
-                return new ErrorResponse(ResponseErrorCode.SERVICE_TITLE_ERROR);
+                return new ErrorResponse(ResponseCode.SERVICE_TITLE_ERROR);
 
             return messageProcessor.Process(title, contentBytes);
+        }
+
+        internal override void CloseTransport(TcpTransport transport)
+        {
+            if (transport == null)
+                return;
         }
 
         public void Close()

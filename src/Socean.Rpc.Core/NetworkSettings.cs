@@ -13,7 +13,7 @@ namespace Socean.Rpc.Core
         private static int _clientCacheSize = 3;
         private static int _serverListenBacklog = 50000;
         private static int _reconnectInterval = 5000;
-        private static TcpSendMode _tcpRequestSendMode = TcpSendMode.Default;
+        private static TcpSendMode _serverTcpSendMode = TcpSendMode.Default;
 
         public static int ClientDetectReceiveInterval
         {
@@ -111,10 +111,10 @@ namespace Socean.Rpc.Core
             }
         }
 
-        public static TcpSendMode TcpRequestSendMode
+        public static TcpSendMode ServerTcpSendMode
         {
-            get { return _tcpRequestSendMode;}
-            set { _tcpRequestSendMode = value; }
+            get { return _serverTcpSendMode;}
+            set { _serverTcpSendMode = value; }
         }
 
         public static byte[] GetClientKeepAliveInfo()

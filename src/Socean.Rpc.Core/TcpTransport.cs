@@ -6,9 +6,9 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core
 {
-    internal class TcpTransport: ITransport
+    internal class TcpTransport : ITransport, IDisposable
     { 
-        internal TcpTransport(TransportHostBase transportHost, IPAddress ip, int port )
+        internal TcpTransport(TcpTransportHostBase transportHost, IPAddress ip, int port )
         {
             RemoteIP = ip;
             RemotePort = port;
@@ -25,7 +25,7 @@ namespace Socean.Rpc.Core
         public IPAddress RemoteIP { get; }
         public int RemotePort { get;  }
 
-        private readonly TransportHostBase _transportHost;
+        private readonly TcpTransportHostBase _transportHost;
 
         private readonly byte[] _writeBufferCache;
         private readonly ReceiveProcessor _receiveProcessor;
@@ -93,7 +93,6 @@ namespace Socean.Rpc.Core
             {
                 Close();
                 throw;
-                //return;
             }
         }
 
@@ -281,5 +280,14 @@ namespace Socean.Rpc.Core
         {
             Close();
         }
+    }
+
+    public interface ITransport 
+    {
+        void Send(string title, byte[] contentBytes, byte stateCode, int messageId);
+
+        void AsyncSend(string title, byte[] contentBytes, byte stateCode, int messageId);
+
+        void Close();
     }
 }

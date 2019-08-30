@@ -26,7 +26,9 @@ namespace Socean.Rpc.Core.Client
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
-            
+
+            FrameData receiveData = null;
+
             while (true)
             {
                 if(stopWatch.ElapsedMilliseconds > NetworkSettings.ReceiveTimeout)
@@ -34,24 +36,22 @@ namespace Socean.Rpc.Core.Client
 
                 Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
               
-                _receiveDataDictionary.TryGetValue(messageId, out var receiveData);
+                _receiveDataDictionary.TryGetValue(messageId, out receiveData);
                 if (receiveData != null)
-                {
-                    _receiveDataDictionary.TryRemove(messageId, out var _);
-                    stopWatch.Stop();
-                    return receiveData;
-                }
+                    break;
             }
 
             _receiveDataDictionary.TryRemove(messageId, out var _);
             stopWatch.Stop();
-            return null;
+            return receiveData;
         }
 
         public async Task<FrameData> WaitForResultAsync(int messageId)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
+
+            FrameData receiveData = null;
 
             while (true)
             {
@@ -60,18 +60,14 @@ namespace Socean.Rpc.Core.Client
 
                 await Task.Delay(NetworkSettings.ClientDetectReceiveInterval);
 
-                _receiveDataDictionary.TryGetValue(messageId, out var receiveData);
+                _receiveDataDictionary.TryGetValue(messageId, out receiveData);
                 if (receiveData != null)
-                {
-                    _receiveDataDictionary.TryRemove(messageId, out var _);
-                    stopWatch.Stop();
-                    return receiveData;
-                }
+                    break;
             }
 
             _receiveDataDictionary.TryRemove(messageId, out var _);
             stopWatch.Stop();
-            return null;
+            return receiveData;
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Socean.Rpc.Core.Client
             _queryContext = new QueryContext();
         }
 
-        private async Task<FrameData> QueryAsync(string title, byte[] contentBytes,bool throwIfErrorResponseCode = false)
+        internal async Task<FrameData> QueryAsync(string title, byte[] contentBytes,bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
                 throw new Exception("RpcClient has been closed");
@@ -60,7 +60,7 @@ namespace Socean.Rpc.Core.Client
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
-                if (stateCode != 0)
+                if (stateCode != ResponseCode.OK)
                     throw new Exception("query error:" + stateCode);
             }
 
@@ -81,17 +81,20 @@ namespace Socean.Rpc.Core.Client
 
         private void CheckConnection()
         {
-            if (_transport.State == -1 || _transport.IsSocketConnected == false)
+            if ( _transport.IsSocketConnected == false)
             {
                 try
                 {
                     _transport.Close();
                 }
-                catch  
+                catch
                 {
-                 
-                }
 
+                }
+            }
+
+            if (_transport.State == -1)
+            {
                 _transport = new TcpTransport(this, ServerIP,ServerPort);
                 _transport.Init();
             }
@@ -134,7 +137,7 @@ namespace Socean.Rpc.Core.Client
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
-                if (stateCode != 0)
+                if (stateCode != ResponseCode.OK)
                     throw new Exception("query failed, error code:" + stateCode);
             }
 

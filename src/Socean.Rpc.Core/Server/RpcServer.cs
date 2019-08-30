@@ -28,7 +28,7 @@ namespace Socean.Rpc.Core.Server
         /// </summary>
         private volatile int _serverState = 0;
 
-        private TcpListener _server;
+        private Socket _server;
 
         public void Bind(IPAddress ip, int port)
         {
@@ -66,10 +66,11 @@ namespace Socean.Rpc.Core.Server
                 var inOptionValues = NetworkSettings.GetServerKeepAliveInfo();
                 var backlog = NetworkSettings.ServerListenBacklog;
 
-                _server = new TcpListener(new IPEndPoint(ServerIP, ServerPort));
+                _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _server.ExclusiveAddressUse = true;
-                _server.Server.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
-                _server.Start(backlog);
+                _server.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
+                _server.Bind(new IPEndPoint(ServerIP, ServerPort));
+                _server.Listen(backlog);
             }
             catch
             {
@@ -79,7 +80,7 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                _server.BeginAcceptSocket(AcceptSocketCallback, _server);
+                _server.BeginAccept(AcceptSocketCallback, _server);
             }
             catch
             {
@@ -93,14 +94,14 @@ namespace Socean.Rpc.Core.Server
             if (_serverState != 1)
                 return;
 
-            var server = (TcpListener)ar.AsyncState;
+            var server = (Socket)ar.AsyncState;
 
             Socket client = null;
             IPEndPoint ipEndPoint = null;
 
             try
             {
-                client = server.EndAcceptSocket(ar);
+                client = server.EndAccept(ar);
                 ipEndPoint = (IPEndPoint)client.RemoteEndPoint;
             }
             catch
@@ -110,7 +111,7 @@ namespace Socean.Rpc.Core.Server
             
             try
             {
-                server.BeginAcceptSocket(AcceptSocketCallback, server);
+                server.BeginAccept(AcceptSocketCallback, server);
             }
             catch
             {
@@ -163,7 +164,7 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                var response = Process(frameData.Title, frameData.ContentBytes, messageProcessor);
+                var response = Process(frameData, messageProcessor);
 
                 responseContent = response.Bytes ?? FrameFormat.EmptyBytes;
                 responseCode = response.Code;
@@ -211,15 +212,15 @@ namespace Socean.Rpc.Core.Server
             //});
         }
 
-        private static ResponseBase Process(string title, byte[] contentBytes, IMessageProcessor messageProcessor)
+        private static ResponseBase Process(FrameData frameData, IMessageProcessor messageProcessor)
         {
             if (messageProcessor == null)
                 return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrEmpty(frameData.Title))
                 return new ErrorResponse(ResponseCode.SERVICE_TITLE_ERROR);
 
-            return messageProcessor.Process(title, contentBytes);
+            return messageProcessor.Process(frameData.Title, frameData.ContentBytes);
         }
 
         internal override void CloseTransport(TcpTransport transport)
@@ -242,7 +243,7 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                _server.Stop();
+                _server.Close();
             }
             catch
             {

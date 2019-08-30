@@ -22,12 +22,12 @@
      public class DefaultMessageProcessor : IMessageProcessor
      {
 
-          public ResponseBase Process(string title, byte[] contentBytes)
+          public ResponseBase Process(Socean.Rpc.Core.Message.FrameData frameData)
           {
 
-              if (title == "book/name/change")
+              if (frameData.Title == "book/name/change")
               {
-                  var content = Encoding.UTF8.GetString(contentBytes);
+                  var content = Encoding.UTF8.GetString(frameData.ContentBytes);
 
                   //here we use newtonsoft.Json serializer 
                   //you need add refer "newtonsoft.Json.dll"
@@ -38,7 +38,7 @@
                   return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
               }
 
-              if (title == "empty")
+              if (frameData.Title == "empty")
               {
                   return new EmptyResponse();
               }

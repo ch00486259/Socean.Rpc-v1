@@ -43,7 +43,7 @@
                   return new EmptyResponse();
               }
 
-              return new ErrorResponse(ResponseErrorCode.SERVICE_NOT_FOUND);
+              return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
           }
       }
 

@@ -1,10 +1,10 @@
 # Socean.Rpc
 An efficient rpc framework,stable and efficient,the rps is about 110k on two core i5 notebook computer and it would be higher in 24 core device.
 
-一个高效的rpc框架，框架特点是 稳定和 高效，在双核i5笔记本电脑上,每秒处理请求数（rps）在11w左右,理论上在24核服务器上应该会更高，不过没实际测试过
+一个高效的rpc框架，框架特点是 稳定和 高效，在双核i5笔记本电脑上测试,每秒处理请求数（rps）在11w左右,理论上在24核服务器上应该会更高 
 
 
-本框架性能可满足部分unity3d服务器端的需求，双核笔记本上支持10000长连接，且每秒10个请求，在性能好的服务器上，20000长连接且每秒20个请求应该是没问题的
+本框架性能可满足部分unity3d服务器端的需求，普通电脑上测试，可支持10000长连接，每秒10个请求（每100毫秒1个请求 ），在性能好的服务器上，20000长连接且每秒20个请求应该是没问题的
   
   
   -------------------------------------------------------------------
@@ -75,7 +75,7 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
   
     public Book ChangeBookName(Book book)
     {
-        using (var rpcClient = ShortConnectionRpcClientFactory.Create(IPAddress.Parse("127.0.0.1"), 11111))
+        using (var rpcClient = new FastRpcClient(IPAddress.Parse("127.0.0.1"), 11111))
         {
             var requestContent = JsonConvert.SerializeObject(book);
             var response = rpcClient.Query("book/name/change", Encoding.UTF8.GetBytes(requestContent));
@@ -90,10 +90,16 @@ An efficient rpc framework,stable and efficient,the rps is about 110k on two cor
   
   NetworkSettings类可修改连接超时时间等参数
   
-  若果要进行性能测试(load test)，最好是在客户端把NetworkSettings.ClientDetectReceiveInterval设置成1，并提升线程优先级至ThreadPriority.Highest
+  性能测试建议(load test)：
+
+  1.压力测试时客户端需将NetworkSettings.ClientDetectReceiveInterval设置成1，可提高客户端的收发效率
+  2.提升线程优先级至ThreadPriority.Highest
+  3.客户端并发线程数最好是100至200之间
+  4.压力测试的客户端最好用win7系统，因为win7的时间片精度有时能达到1ms
+  5.最好是多机测试
   
   
-  Socean.Rpc.Core未来的变动会比较小，接下来会推出Socean.Rpc.Contract，以支持各种扩展，如MVC中的route等功能
+ 
   
   
   

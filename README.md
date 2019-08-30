@@ -38,7 +38,7 @@
                   return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
               }
 
-              if (frameData.Title == "empty")
+              if (frameData.Title == "test return empty")
               {
                   return new EmptyResponse();
               }

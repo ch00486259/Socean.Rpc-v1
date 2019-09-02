@@ -24,8 +24,8 @@
 
           public ResponseBase Process(Socean.Rpc.Core.Message.FrameData frameData)
           {
-
-              if (frameData.Title == "book/name/change")
+              var title = Encoding.UTF8.GetString(frameData.TitleBytes);
+              if (title == "/books/namechange")
               {
                   var content = Encoding.UTF8.GetString(frameData.ContentBytes);
 
@@ -38,7 +38,7 @@
                   return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
               }
 
-              if (frameData.Title == "test return empty")
+              if (title == "test return empty")
               {
                   return new EmptyResponse();
               }
@@ -76,7 +76,7 @@
         using (var rpcClient = new FastRpcClient(IPAddress.Parse("127.0.0.1"), 11111))
         {
             var requestContent = JsonConvert.SerializeObject(book);
-            var response = rpcClient.Query("book/name/change", Encoding.UTF8.GetBytes(requestContent));
+            var response = rpcClient.Query(Encoding.UTF8.GetBytes("/books/namechange"), Encoding.UTF8.GetBytes(requestContent));
             var content = Encoding.UTF8.GetString(response.ContentBytes);
             return JsonConvert.DeserializeObject<Book>(content);
         }

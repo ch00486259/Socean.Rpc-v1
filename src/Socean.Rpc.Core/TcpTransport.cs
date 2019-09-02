@@ -18,7 +18,7 @@ namespace Socean.Rpc.Core
 
             _state = 0;
             _receiveProcessor = new ReceiveProcessor();
-            _writeBufferCache = new byte[NetworkSettings.WriteBufferSize];
+            //_writeBufferCache = new byte[NetworkSettings.WriteBufferSize];
         }
 
         public string Key { get; }
@@ -27,7 +27,7 @@ namespace Socean.Rpc.Core
 
         private readonly TcpTransportHostBase _transportHost;
 
-        private readonly byte[] _writeBufferCache;
+        //private readonly byte[] _writeBufferCache;
         private readonly ReceiveProcessor _receiveProcessor;
         private Socket _socket;
         private ReceiveCallbackData _tempReceiveCallbackData = new ReceiveCallbackData();
@@ -98,8 +98,8 @@ namespace Socean.Rpc.Core
 
         private byte[] GetSendBuffer(int byteCount)
         {
-            if (byteCount <= _writeBufferCache.Length )
-                return _writeBufferCache;
+            //if (byteCount <= _writeBufferCache.Length )
+            //    return _writeBufferCache;
 
             return new byte[byteCount];
         }
@@ -205,13 +205,13 @@ namespace Socean.Rpc.Core
         private void SendInternal(byte[] extentionBytes,string title, byte[] contentBytes, byte stateCode, int messageId, TcpSendMode sendMode)
         {
             if (_state != 1)
-                throw new Exception();
+                throw new Exception("send falied,state error");
 
             if (title == null)
                 title = string.Empty;
 
             if (title.Length >= 65535)
-                throw new Exception();
+                throw new Exception("send failed, title length error");
 
             if (extentionBytes == null)
                 extentionBytes = FrameFormat.EmptyBytes;

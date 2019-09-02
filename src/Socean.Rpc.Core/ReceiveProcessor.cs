@@ -150,7 +150,7 @@ namespace Socean.Rpc.Core
             }
 
             if (_step == 2)
-                throw new Exception();
+                throw new Exception("CheckCurrentReceive error,step 2 is not valid");
         }
 
         internal void GetNextReceiveCallbackData(ref ReceiveCallbackData tempReceiveCallbackData)

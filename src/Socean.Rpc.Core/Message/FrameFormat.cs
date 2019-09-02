@@ -62,7 +62,7 @@ namespace Socean.Rpc.Core.Message
         public static void FillFrameHeader(byte[] buffer, byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes, byte stateCode, int messageId)
         {
             if (buffer == null)
-                throw new Exception();
+                throw new Exception("FillFrameHeader failed,buffer is null");
 
             if (extentionBytes == null)
                 extentionBytes = EmptyBytes;
@@ -74,7 +74,7 @@ namespace Socean.Rpc.Core.Message
                 contentBytes = EmptyBytes;
 
             if (titleBytes.Length > 65535)
-                throw new Exception();
+                throw new Exception("FillFrameHeader failed,titleBytes length error");
 
             var extentionLength = extentionBytes.Length;
             var titleLength = titleBytes.Length;
@@ -112,7 +112,7 @@ namespace Socean.Rpc.Core.Message
         public static void FillFrameBody(byte[] buffer, byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes)
         {
             if (buffer == null)
-                throw new Exception();
+                throw new Exception("FillFrameBody falied,buffer is null");
 
             if (extentionBytes == null)
                 extentionBytes = EmptyBytes;

@@ -25,16 +25,16 @@ namespace Socean.Rpc.Core.Client
             _queryContext = new QueryContext();
         }
 
-        internal async Task<FrameData> QueryAsync(byte[] extentionBytes, string title, byte[] contentBytes,bool throwIfErrorResponseCode = false)
+        public async Task<FrameData> QueryAsync(string title, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
-                throw new Exception("RpcClient has been closed");
+                throw new Exception("QueryAsync failed,connection has been closed");
 
             if (string.IsNullOrEmpty(title))
-                throw new Exception();
+                throw new Exception("QueryAsync failed,title is null");
 
             if (title.Length > 65535)
-                throw new Exception();
+                throw new Exception("QueryAsync failed,title length error");
 
             var messageId = Interlocked.Increment(ref _messageId);
 
@@ -44,44 +44,35 @@ namespace Socean.Rpc.Core.Client
 
                 _queryContext.Reset(messageId);
 
-                //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                //    _transport.AsyncSend(extentionBytes,title, contentBytes, 0, messageId);
+                //if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
+                //    _transport.AsyncSend(extentionBytes, title, contentBytes, 0, messageId);
                 //else
-                _transport.Send(extentionBytes,title, contentBytes, 0, messageId);
+                    _transport.Send(extentionBytes,title, contentBytes, 0, messageId);
             }
 
             var receiveData = await _queryContext.WaitForResultAsync(messageId);
             if (receiveData == null)
             {
                 _transport.Close();
-                throw new Exception("query timeout");
+                throw new Exception("QueryAsync failed, time is out");
             }
 
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
                 if (stateCode != ResponseCode.OK)
-                    throw new Exception("query error:" + stateCode);
+                    throw new Exception("QueryAsync failed,error code:" + stateCode);
             }
 
             return receiveData;
         }
 
-        public FrameData Query(string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
-        {
-            return Query(null, title, contentBytes, throwIfErrorResponseCode);
-        }
-
-        public FrameData Query(byte[] extentionBytes, string title, byte[] contentBytes, bool throwIfErrorResponseCode = false)
+        public FrameData Query(string title, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
-                throw new Exception("RpcClient has been closed");
+                throw new Exception("query failed,connection has been closed");
 
-            return QueryInternal(extentionBytes,title, contentBytes, throwIfErrorResponseCode);
-
-            //var task = QueryAsync(title, contentBytes, throwIfErrorResponseCode);
-            //task.Wait();
-            //return task.Result;
+            return QueryInternal(title, contentBytes, extentionBytes, throwIfErrorResponseCode);
         }
 
         private void CheckConnection()
@@ -110,13 +101,13 @@ namespace Socean.Rpc.Core.Client
             }
         }
 
-        private FrameData QueryInternal(byte[] extentionBytes, string title, byte[] contentBytes, bool throwIfErrorResponseCode)
+        private FrameData QueryInternal(string title, byte[] contentBytes, byte[] extentionBytes, bool throwIfErrorResponseCode)
         {
             if (string.IsNullOrEmpty(title))
-                throw new Exception();
+                throw new Exception("query failed,title is null");
 
             if (title.Length > 65535)
-                throw new Exception();
+                throw new Exception("query failed,title length error");
 
             var messageId = Interlocked.Increment(ref _messageId);
 
@@ -136,14 +127,14 @@ namespace Socean.Rpc.Core.Client
             if (receiveData == null)
             {
                 _transport.Close();
-                throw new Exception("query timeout");
+                throw new Exception("query failed,time is out");
             }
 
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
                 if (stateCode != ResponseCode.OK)
-                    throw new Exception("query failed, error code:" + stateCode);
+                    throw new Exception("query failed,error code:" + stateCode);
             }
 
             return receiveData;

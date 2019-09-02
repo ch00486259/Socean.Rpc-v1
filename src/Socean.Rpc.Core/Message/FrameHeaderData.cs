@@ -6,14 +6,14 @@ namespace Socean.Rpc.Core.Message
     {
         internal void Bind(Int16 extentionLength, Int16 titleLength, int contentLength, byte stateCode, int messageId)
         {
-            this.ExtentionLength = extentionLength;
+            this.HeaderExtentionLength = extentionLength;
             this.TitleLength = titleLength;
             this.ContentLength = contentLength;
             this.StateCode = stateCode;
             this.MessageId = messageId;
         }
 
-        public Int16 ExtentionLength { get; private set; }
+        public Int16 HeaderExtentionLength { get; private set; }
 
         public Int16 TitleLength { get; private set; }
 

@@ -167,7 +167,7 @@ namespace Socean.Rpc.Core.Server
             {
                 var response = Process(frameData, messageProcessor);
 
-                responseExtention = response.ExtentionBytes ?? FrameFormat.EmptyBytes;
+                responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;
                 responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
                 responseCode = response.Code;
             }

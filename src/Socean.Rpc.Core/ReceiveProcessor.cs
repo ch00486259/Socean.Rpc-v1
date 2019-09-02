@@ -13,13 +13,13 @@ namespace Socean.Rpc.Core
             _tempFrameHeaderData = new FrameHeaderData(); 
         }
 
-        private Int16 _extentionLength;
+        private Int16 _headerExtentionLength;
         private Int16 _titleLength;
         private int _contentLength;
         private byte _stateCode;
         private int _messageId;
 
-        private byte[] _extentionBytes;
+        private byte[] _headerExtentionBytes;
         private string _title;
         private byte[] _contentBytes;
 
@@ -70,7 +70,7 @@ namespace Socean.Rpc.Core
 
             if (step == 1)
             {
-                var bodyByteLength = _extentionLength + _titleLength + _contentLength;
+                var bodyByteLength = _headerExtentionLength + _titleLength + _contentLength;
                 var readBuffer = GetBodyReadBuffer(bodyByteLength);
 
                 ChangeToStep(1, readBuffer, bodyByteLength);
@@ -95,15 +95,15 @@ namespace Socean.Rpc.Core
                 var frameHeaderData = _tempFrameHeaderData;
                 FrameFormat.ReadDataFromHeaderBuffer(_currentStepReadBuffer,ref frameHeaderData);
 
-                _extentionLength = frameHeaderData.ExtentionLength;
+                _headerExtentionLength = frameHeaderData.HeaderExtentionLength;
                 _titleLength = frameHeaderData.TitleLength;
                 _contentLength = frameHeaderData.ContentLength;
                 _stateCode = frameHeaderData.StateCode;
                 _messageId = frameHeaderData.MessageId;
 
-                if (_extentionLength + _titleLength + _contentLength == 0)
+                if (_headerExtentionLength + _titleLength + _contentLength == 0)
                 {
-                    _extentionBytes = FrameFormat.EmptyBytes;
+                    _headerExtentionBytes = FrameFormat.EmptyBytes;
                     _title = string.Empty;
                     _contentBytes = FrameFormat.EmptyBytes; 
 
@@ -119,30 +119,30 @@ namespace Socean.Rpc.Core
             {
                 _currentStepReadCount += readCount;
 
-                if (_currentStepReadCount < _extentionLength + _titleLength + _contentLength)
+                if (_currentStepReadCount < _headerExtentionLength + _titleLength + _contentLength)
                     return;
 
-                if (_currentStepReadCount != _extentionLength + _titleLength + _contentLength)
+                if (_currentStepReadCount != _headerExtentionLength + _titleLength + _contentLength)
                     throw new Exception("message body length error");
 
-                _extentionBytes = new byte[_extentionLength];
-                if (_extentionLength > 0)
+                _headerExtentionBytes = new byte[_headerExtentionLength];
+                if (_headerExtentionLength > 0)
                 {
-                    Array.Copy(_currentStepReadBuffer, 0, _extentionBytes, 0, _extentionLength);
+                    Array.Copy(_currentStepReadBuffer, 0, _headerExtentionBytes, 0, _headerExtentionLength);
                 }
 
                 _title = string.Empty;
 
                 if (_titleLength > 0)
                 {
-                    _title = FrameFormat.GetTitle(_currentStepReadBuffer, _extentionLength, _titleLength);
+                    _title = FrameFormat.GetTitle(_currentStepReadBuffer, _headerExtentionLength, _titleLength);
                 }
 
                 _contentBytes = new byte[_contentLength];
 
                 if (_contentLength > 0)
                 {
-                    Array.Copy(_currentStepReadBuffer, _extentionLength + _titleLength, _contentBytes, 0, _contentLength);
+                    Array.Copy(_currentStepReadBuffer, _headerExtentionLength + _titleLength, _contentBytes, 0, _contentLength);
                 }
 
                 StepTo(2);
@@ -162,7 +162,7 @@ namespace Socean.Rpc.Core
         {
             if (_step == 2)
             {
-                return new FrameData(_extentionBytes,_title, _contentBytes, _stateCode, _messageId);
+                return new FrameData(_headerExtentionBytes,_title, _contentBytes, _stateCode, _messageId);
             }
 
             return null;

@@ -8,10 +8,10 @@ namespace Socean.Rpc.Core
         {
             Code = code;
             ContentBytes = contentBytes ?? FrameFormat.EmptyBytes;
-            ExtentionBytes = extentionBytes ?? FrameFormat.EmptyBytes;
+            HeaderExtentionBytes = extentionBytes ?? FrameFormat.EmptyBytes;
         }
 
-        public byte[] ExtentionBytes { get; }
+        public byte[] HeaderExtentionBytes { get; }
 
         public byte[] ContentBytes { get; }
 

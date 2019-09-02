@@ -4,14 +4,14 @@
     {
         public FrameData(byte[] extention,string title, byte[] contentBytes, byte stateCode, int messageId)
         {
-            Extention = extention;
+            HeaderExtention = extention;
             Title = title;
             ContentBytes = contentBytes;
             StateCode = stateCode;
             MessageId = messageId;
         }
 
-        public readonly byte[] Extention;
+        public readonly byte[] HeaderExtention;
 
         public readonly string Title;
 

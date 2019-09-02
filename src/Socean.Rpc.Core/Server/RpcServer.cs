@@ -180,13 +180,18 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
+                var tuple = FrameFormat.GenerateFrameBytes(responseExtention, string.Empty, responseContent, responseCode, frameData.MessageId);
+
+                var sendBuffer = tuple.Item1;
+                var messageByteCount = tuple.Item2;
+
                 if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
                 {
-                    serverTransport.AsyncSend(responseExtention, string.Empty, responseContent, responseCode, frameData.MessageId);
+                    serverTransport.SendAsync(sendBuffer, messageByteCount);
                 }
                 else
                 {
-                    serverTransport.Send(responseExtention, string.Empty, responseContent, responseCode, frameData.MessageId);
+                    serverTransport.Send(sendBuffer, messageByteCount);
                 }
             }
             catch

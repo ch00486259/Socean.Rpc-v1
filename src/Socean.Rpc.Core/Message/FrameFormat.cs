@@ -192,5 +192,33 @@ namespace Socean.Rpc.Core.Message
 
             frameHeaderData.Bind((Int16)extentionLength,(Int16)titleLength, contentLength, buffer[10], messageId);
         }
+
+        public static Tuple<byte[],int> GenerateFrameBytes(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId)
+        {
+            if (title == null)
+                title = string.Empty;
+
+            if (title.Length >= 65535)
+                throw new Exception("GenerateFrameBytes failed, title length error");
+
+            if (extentionBytes == null)
+                extentionBytes = EmptyBytes;
+
+            if (contentBytes == null)
+                contentBytes = EmptyBytes;
+
+            var titleBytes = GetTitleBytes(title);
+            var messageByteCount = ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
+            var sendBuffer = GetSendBuffer(messageByteCount);
+            FillFrameHeader(sendBuffer, extentionBytes, titleBytes, contentBytes, stateCode, messageId);
+            FillFrameBody(sendBuffer, extentionBytes, titleBytes, contentBytes);
+
+            return new Tuple<byte[], int>(sendBuffer, messageByteCount);
+        }
+
+        private static byte[] GetSendBuffer(int byteCount)
+        {
+            return new byte[byteCount];
+        }
     }
 }

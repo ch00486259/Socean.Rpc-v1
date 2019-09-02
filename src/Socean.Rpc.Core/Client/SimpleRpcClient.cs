@@ -38,6 +38,10 @@ namespace Socean.Rpc.Core.Client
 
             var messageId = Interlocked.Increment(ref _messageId);
 
+            var tuple = FrameFormat.GenerateFrameBytes(extentionBytes, title, contentBytes, 0, messageId);
+            var sendBuffer = tuple.Item1;
+            var messageByteCount = tuple.Item2;
+
             lock (_queryKey)
             {
                 CheckConnection();
@@ -45,9 +49,9 @@ namespace Socean.Rpc.Core.Client
                 _queryContext.Reset(messageId);
 
                 //if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
-                //    _transport.AsyncSend(extentionBytes, title, contentBytes, 0, messageId);
+                //    _transport.SendAsync(sendBuffer, messageByteCount);
                 //else
-                    _transport.Send(extentionBytes,title, contentBytes, 0, messageId);
+                    _transport.Send(sendBuffer, messageByteCount);
             }
 
             var receiveData = await _queryContext.WaitForResultAsync(messageId);
@@ -111,6 +115,10 @@ namespace Socean.Rpc.Core.Client
 
             var messageId = Interlocked.Increment(ref _messageId);
 
+            var tuple = FrameFormat.GenerateFrameBytes(extentionBytes, title, contentBytes, 0, messageId);
+            var sendBuffer = tuple.Item1;
+            var messageByteCount = tuple.Item2;
+
             lock (_queryKey)
             {
                 CheckConnection();
@@ -118,9 +126,9 @@ namespace Socean.Rpc.Core.Client
                 _queryContext.Reset(messageId);
 
                 //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-                //    _transport.AsyncSend(extentionBytes,title, contentBytes, 0, messageId);
+                //    _transport.SendAsync(sendBuffer, messageByteCount);
                 //else
-                _transport.Send(extentionBytes,title, contentBytes, 0, messageId);
+                    _transport.Send(sendBuffer, messageByteCount);
             }
 
             var receiveData = _queryContext.WaitForResult(messageId);

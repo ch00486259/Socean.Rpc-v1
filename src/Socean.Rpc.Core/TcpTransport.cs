@@ -192,62 +192,35 @@ namespace Socean.Rpc.Core
             serverTransport.OnReceive(receiveData);
         }
 
-        public void AsyncSend(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId)
-        {
-            SendInternal(extentionBytes,title, contentBytes, stateCode, messageId, TcpSendMode.Async);
-        }
-
-        public void Send(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId)
-        {
-            SendInternal(extentionBytes,title, contentBytes, stateCode, messageId, TcpSendMode.Sync);
-        }
-
-        private void SendInternal(byte[] extentionBytes,string title, byte[] contentBytes, byte stateCode, int messageId, TcpSendMode sendMode)
+        public void SendAsync(byte[] sendBuffer, int messageByteCount)
         {
             if (_state != 1)
                 throw new Exception("send falied,state error");
 
-            if (title == null)
-                title = string.Empty;
-
-            if (title.Length >= 65535)
-                throw new Exception("send failed, title length error");
-
-            if (extentionBytes == null)
-                extentionBytes = FrameFormat.EmptyBytes;
-
-            if (contentBytes == null)
-                contentBytes = FrameFormat.EmptyBytes;
-
-            var titleBytes = FrameFormat.GetTitleBytes(title);
-            var messageByteCount = FrameFormat.ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
-            var sendBuffer = GetSendBuffer(messageByteCount);
-            FrameFormat.FillFrameHeader(sendBuffer, extentionBytes, titleBytes, contentBytes, stateCode, messageId);
-            FrameFormat.FillFrameBody(sendBuffer, extentionBytes, titleBytes, contentBytes);
-
-            if (sendMode == TcpSendMode.Async)
+            try
             {
-                try
-                {
-                    _socket.BeginSend(sendBuffer, 0, messageByteCount, SocketFlags.None, SendCallback, this);
-                }
-                catch
-                {
-                    Close();
-                    throw;
-                }
+                _socket.BeginSend(sendBuffer, 0, messageByteCount, SocketFlags.None, SendCallback, this);
             }
-            else
+            catch
             {
-                try
-                {
-                    _socket.Send(sendBuffer, messageByteCount, SocketFlags.None);
-                }
-                catch
-                {
-                    Close();
-                    throw;
-                }
+                Close();
+                throw;
+            }
+        }
+
+        public void Send(byte[] sendBuffer, int messageByteCount)
+        {
+            if (_state != 1)
+                throw new Exception("send falied,state error");
+
+            try
+            {
+                _socket.Send(sendBuffer, messageByteCount, SocketFlags.None);
+            }
+            catch
+            {
+                Close();
+                throw;
             }
         }
 
@@ -285,9 +258,13 @@ namespace Socean.Rpc.Core
 
     public interface ITransport 
     {
-        void Send(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
+        void Send(byte[] sendBuffer, int messageByteCount);
 
-        void AsyncSend(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
+        void SendAsync(byte[] sendBuffer, int messageByteCount);
+
+        //void Send(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
+
+        //void AsyncSend(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
 
         void Close();
     }

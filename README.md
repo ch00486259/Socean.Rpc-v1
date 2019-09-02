@@ -1,6 +1,6 @@
 # Socean.Rpc
  
-一个高效的rpc框架，框架特点是 稳定和 高效，在双核i5笔记本电脑上测试，短连接模式下每秒处理请求数5000左右，长连接模式下每秒处理请求数11w左右
+一个高效的rpc框架，框架特点是稳定和高效，在双核i5笔记本电脑上测试，长连接模式下每秒处理请求数11w左右，短连接模式下每秒处理请求数5000左右
 
 本框架性能可满足部分unity3d服务器端的需求，普通电脑上测试，可支持10000长连接，每秒10个请求（每100毫秒1个请求 ），在性能好的服务器上，20000长连接且每秒20个请求应该是没问题的
   
@@ -22,12 +22,12 @@
      public class DefaultMessageProcessor : IMessageProcessor
      {
 
-          public ResponseBase Process(string title, byte[] contentBytes)
+          public ResponseBase Process(Socean.Rpc.Core.Message.FrameData frameData)
           {
 
-              if (title == "book/name/change")
+              if (frameData.Title == "book/name/change")
               {
-                  var content = Encoding.UTF8.GetString(contentBytes);
+                  var content = Encoding.UTF8.GetString(frameData.ContentBytes);
 
                   //here we use newtonsoft.Json serializer 
                   //you need add refer "newtonsoft.Json.dll"
@@ -38,12 +38,12 @@
                   return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
               }
 
-              if (title == "empty")
+              if (frameData.Title == "test return empty")
               {
                   return new EmptyResponse();
               }
 
-              return new ErrorResponse(ResponseErrorCode.SERVICE_NOT_FOUND);
+              return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
           }
       }
 

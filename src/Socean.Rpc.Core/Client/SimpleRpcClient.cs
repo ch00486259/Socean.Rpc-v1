@@ -25,20 +25,20 @@ namespace Socean.Rpc.Core.Client
             _queryContext = new QueryContext();
         }
 
-        public async Task<FrameData> QueryAsync(string title, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
+        public async Task<FrameData> QueryAsync(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
                 throw new Exception("QueryAsync failed,connection has been closed");
 
-            if (string.IsNullOrEmpty(title))
+            if (titleBytes == null)
                 throw new Exception("QueryAsync failed,title is null");
 
-            if (title.Length > 65535)
+            if (titleBytes.Length > 65535)
                 throw new Exception("QueryAsync failed,title length error");
 
             var messageId = Interlocked.Increment(ref _messageId);
 
-            var tuple = FrameFormat.GenerateFrameBytes(extentionBytes, title, contentBytes, 0, messageId);
+            var tuple = FrameFormat.GenerateFrameBytes(extentionBytes, titleBytes, contentBytes, 0, messageId);
             var sendBuffer = tuple.Item1;
             var messageByteCount = tuple.Item2;
 
@@ -71,12 +71,12 @@ namespace Socean.Rpc.Core.Client
             return receiveData;
         }
 
-        public FrameData Query(string title, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
+        public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
         {
             if (_transport == null)
                 throw new Exception("query failed,connection has been closed");
 
-            return QueryInternal(title, contentBytes, extentionBytes, throwIfErrorResponseCode);
+            return QueryInternal(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
         }
 
         private void CheckConnection()
@@ -105,17 +105,17 @@ namespace Socean.Rpc.Core.Client
             }
         }
 
-        private FrameData QueryInternal(string title, byte[] contentBytes, byte[] extentionBytes, bool throwIfErrorResponseCode)
+        private FrameData QueryInternal(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes, bool throwIfErrorResponseCode)
         {
-            if (string.IsNullOrEmpty(title))
+            if (titleBytes == null)
                 throw new Exception("query failed,title is null");
 
-            if (title.Length > 65535)
+            if (titleBytes.Length > 65535)
                 throw new Exception("query failed,title length error");
 
             var messageId = Interlocked.Increment(ref _messageId);
 
-            var tuple = FrameFormat.GenerateFrameBytes(extentionBytes, title, contentBytes, 0, messageId);
+            var tuple = FrameFormat.GenerateFrameBytes(extentionBytes, titleBytes, contentBytes, 0, messageId);
             var sendBuffer = tuple.Item1;
             var messageByteCount = tuple.Item2;
 

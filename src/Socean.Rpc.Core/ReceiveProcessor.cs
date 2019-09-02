@@ -20,7 +20,7 @@ namespace Socean.Rpc.Core
         private int _messageId;
 
         private byte[] _headerExtentionBytes;
-        private string _title;
+        private byte[] _titleBytes;
         private byte[] _contentBytes;
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace Socean.Rpc.Core
                 if (_headerExtentionLength + _titleLength + _contentLength == 0)
                 {
                     _headerExtentionBytes = FrameFormat.EmptyBytes;
-                    _title = string.Empty;
+                    _titleBytes = FrameFormat.EmptyBytes;
                     _contentBytes = FrameFormat.EmptyBytes; 
 
                     StepTo(2);
@@ -131,11 +131,11 @@ namespace Socean.Rpc.Core
                     Array.Copy(_currentStepReadBuffer, 0, _headerExtentionBytes, 0, _headerExtentionLength);
                 }
 
-                _title = string.Empty;
+                _titleBytes = new byte[_titleLength];
 
                 if (_titleLength > 0)
                 {
-                    _title = FrameFormat.GetTitle(_currentStepReadBuffer, _headerExtentionLength, _titleLength);
+                    Array.Copy(_currentStepReadBuffer, _headerExtentionLength, _titleBytes, 0, _titleLength);
                 }
 
                 _contentBytes = new byte[_contentLength];
@@ -162,7 +162,7 @@ namespace Socean.Rpc.Core
         {
             if (_step == 2)
             {
-                return new FrameData(_headerExtentionBytes,_title, _contentBytes, _stateCode, _messageId);
+                return new FrameData(_headerExtentionBytes, _titleBytes, _contentBytes, _stateCode, _messageId);
             }
 
             return null;

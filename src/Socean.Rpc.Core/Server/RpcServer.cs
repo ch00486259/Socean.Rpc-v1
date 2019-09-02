@@ -180,7 +180,7 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                var tuple = FrameFormat.GenerateFrameBytes(responseExtention, string.Empty, responseContent, responseCode, frameData.MessageId);
+                var tuple = FrameFormat.GenerateFrameBytes(responseExtention, FrameFormat.EmptyBytes, responseContent, responseCode, frameData.MessageId);
 
                 var sendBuffer = tuple.Item1;
                 var messageByteCount = tuple.Item2;
@@ -225,7 +225,7 @@ namespace Socean.Rpc.Core.Server
             if (messageProcessor == null)
                 return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
 
-            if (string.IsNullOrEmpty(frameData.Title))
+            if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
                 return new ErrorResponse(ResponseCode.SERVICE_TITLE_ERROR);
 
             return messageProcessor.Process(frameData);

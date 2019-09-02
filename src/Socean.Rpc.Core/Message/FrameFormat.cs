@@ -156,19 +156,6 @@ namespace Socean.Rpc.Core.Message
             return hashCodeByteArray;
         }
 
-        public static byte[] GetTitleBytes(string title)
-        {
-            if (title == null)
-                return EmptyBytes;
-
-            return Encoding.UTF8.GetBytes(title);
-        }
-
-        public static string GetTitle(byte[] buffer, int index, int count)
-        {
-            return Encoding.UTF8.GetString(buffer, index, count);
-        }
-
         public static int ComputeFrameByteCount(byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes)
         {
             if (extentionBytes == null)
@@ -193,12 +180,12 @@ namespace Socean.Rpc.Core.Message
             frameHeaderData.Bind((Int16)extentionLength,(Int16)titleLength, contentLength, buffer[10], messageId);
         }
 
-        public static Tuple<byte[],int> GenerateFrameBytes(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId)
+        public static Tuple<byte[],int> GenerateFrameBytes(byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes, byte stateCode, int messageId)
         {
-            if (title == null)
-                title = string.Empty;
+            if (titleBytes == null)
+                titleBytes = EmptyBytes;
 
-            if (title.Length >= 65535)
+            if (titleBytes.Length >= 65535)
                 throw new Exception("GenerateFrameBytes failed, title length error");
 
             if (extentionBytes == null)
@@ -207,16 +194,15 @@ namespace Socean.Rpc.Core.Message
             if (contentBytes == null)
                 contentBytes = EmptyBytes;
 
-            var titleBytes = GetTitleBytes(title);
             var messageByteCount = ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
-            var sendBuffer = GetSendBuffer(messageByteCount);
+            var sendBuffer = GetBufferFromCache(messageByteCount);
             FillFrameHeader(sendBuffer, extentionBytes, titleBytes, contentBytes, stateCode, messageId);
             FillFrameBody(sendBuffer, extentionBytes, titleBytes, contentBytes);
 
             return new Tuple<byte[], int>(sendBuffer, messageByteCount);
         }
 
-        private static byte[] GetSendBuffer(int byteCount)
+        private static byte[] GetBufferFromCache(int byteCount)
         {
             return new byte[byteCount];
         }

@@ -64,7 +64,7 @@ namespace Socean.Rpc.Core.Client
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
-                if (stateCode != ResponseCode.OK)
+                if (stateCode != (byte)ResponseCode.OK)
                     throw new Exception("QueryAsync failed,error code:" + stateCode);
             }
 
@@ -141,7 +141,7 @@ namespace Socean.Rpc.Core.Client
             if (throwIfErrorResponseCode)
             {
                 var stateCode = receiveData.StateCode;
-                if (stateCode != ResponseCode.OK)
+                if (stateCode != (byte)ResponseCode.OK)
                     throw new Exception("query failed,error code:" + stateCode);
             }
 

@@ -18,7 +18,6 @@ namespace Socean.Rpc.Core
 
             _state = 0;
             _receiveProcessor = new ReceiveProcessor();
-            //_writeBufferCache = new byte[NetworkSettings.WriteBufferSize];
         }
 
         public string Key { get; }
@@ -27,7 +26,6 @@ namespace Socean.Rpc.Core
 
         private readonly TcpTransportHostBase _transportHost;
 
-        //private readonly byte[] _writeBufferCache;
         private readonly ReceiveProcessor _receiveProcessor;
         private Socket _socket;
         private ReceiveCallbackData _tempReceiveCallbackData = new ReceiveCallbackData();
@@ -94,14 +92,6 @@ namespace Socean.Rpc.Core
                 Close();
                 throw;
             }
-        }
-
-        private byte[] GetSendBuffer(int byteCount)
-        {
-            //if (byteCount <= _writeBufferCache.Length )
-            //    return _writeBufferCache;
-
-            return new byte[byteCount];
         }
 
         private void ResetReceiveProcessor()
@@ -261,10 +251,6 @@ namespace Socean.Rpc.Core
         void Send(byte[] sendBuffer, int messageByteCount);
 
         void SendAsync(byte[] sendBuffer, int messageByteCount);
-
-        //void Send(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
-
-        //void AsyncSend(byte[] extentionBytes, string title, byte[] contentBytes, byte stateCode, int messageId);
 
         void Close();
     }

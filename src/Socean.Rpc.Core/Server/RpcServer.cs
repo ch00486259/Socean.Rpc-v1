@@ -169,13 +169,13 @@ namespace Socean.Rpc.Core.Server
 
                 responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;
                 responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
-                responseCode = response.Code;
+                responseCode = (byte)response.Code;
             }
             catch
             {
                 responseExtention = FrameFormat.EmptyBytes;
                 responseContent = FrameFormat.EmptyBytes;
-                responseCode = ResponseCode.SERVER_INTERNAL_ERROR;
+                responseCode = (byte)ResponseCode.SERVER_INTERNAL_ERROR;
             }
 
             try

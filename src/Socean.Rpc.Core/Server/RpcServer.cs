@@ -223,10 +223,10 @@ namespace Socean.Rpc.Core.Server
         private static ResponseBase Process(FrameData frameData, IMessageProcessor messageProcessor)
         {
             if (messageProcessor == null)
-                return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
+                return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
 
             if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
-                return new ErrorResponse(ResponseCode.SERVICE_TITLE_ERROR);
+                return new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
 
             return messageProcessor.Process(frameData);
         }

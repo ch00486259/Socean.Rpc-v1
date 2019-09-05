@@ -2,15 +2,16 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Server
 {
-    public sealed class RpcServer: TcpTransportHostBase,IServer
+    public sealed class RpcServer : TcpTransportHostBase, IServer
     {
-        public RpcServer() 
-        {          
-            
+        public RpcServer()
+        {
+
         }
 
         public IPAddress ServerIP { get; private set; }
@@ -48,11 +49,11 @@ namespace Socean.Rpc.Core.Server
 
         public void Start()
         {
-            if(_serverState != 0)
+            if (_serverState != 0)
                 throw new Exception();
 
             var oldValue = Interlocked.Exchange(ref _serverState, 1);
-            if(oldValue == 1)
+            if (oldValue == 1)
                 return;
 
             if (oldValue == -1)
@@ -108,7 +109,7 @@ namespace Socean.Rpc.Core.Server
             {
 
             }
-            
+
             try
             {
                 server.BeginAccept(AcceptSocketCallback, server);
@@ -156,7 +157,12 @@ namespace Socean.Rpc.Core.Server
             }
         }
 
-        private static void ProcessReceive(TcpTransport serverTransport, FrameData frameData,
+        internal override void ReceiveMessage(TcpTransport serverTransport, FrameData frameData)
+        {
+            ProcessReceiveAsync(serverTransport, frameData, MessageProcessor);
+        }
+
+        private static async Task ProcessReceiveAsync(TcpTransport serverTransport, FrameData frameData,
             IMessageProcessor messageProcessor)
         {
             byte[] responseExtention = null;
@@ -165,7 +171,7 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                var response = Process(frameData, messageProcessor);
+                var response = await ProcessAsync(frameData, messageProcessor);
 
                 responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;
                 responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
@@ -201,34 +207,15 @@ namespace Socean.Rpc.Core.Server
             }
         }
 
-        internal override void ReceiveMessage(TcpTransport serverTransport, FrameData frameData)
+        private static async Task<ResponseBase> ProcessAsync(FrameData frameData, IMessageProcessor messageProcessor)
         {
-            ThreadPool.QueueUserWorkItem((item) =>
-            {
-                var tuple = item as Tuple<TcpTransport, FrameData, IMessageProcessor>;
-                var serverTransport1 = tuple.Item1;
-                var frameData1 = tuple.Item2;
-                var messageProcessor1 = tuple.Item3;
-
-                ProcessReceive(serverTransport1, frameData1, messageProcessor1);
-
-            }, new Tuple<TcpTransport, FrameData, IMessageProcessor>(serverTransport, frameData, MessageProcessor));
-
-            //Task.Run(() =>
-            //{
-            //    ProcessReceive(serverTransport, frameData, MessageProcessor);
-            //});
-        }
-
-        private static ResponseBase Process(FrameData frameData, IMessageProcessor messageProcessor)
-        {
-            if (messageProcessor == null)
-                return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
-
             if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
                 return new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
 
-            return messageProcessor.Process(frameData);
+            if (messageProcessor == null)
+                return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
+
+            return await messageProcessor.Process(frameData);
         }
 
         internal override void CloseTransport(TcpTransport transport)
@@ -246,7 +233,7 @@ namespace Socean.Rpc.Core.Server
                 return;
 
             var oldValue = Interlocked.Exchange(ref _serverState, -1);
-            if(oldValue == -1)
+            if (oldValue == -1)
                 return;
 
             try

@@ -22,7 +22,7 @@
      public class DefaultMessageProcessor : IMessageProcessor
      {
 
-          public ResponseBase Process(Socean.Rpc.Core.Message.FrameData frameData)
+          public async Task<ResponseBase> Process(Socean.Rpc.Core.Message.FrameData frameData)
           {
               var title = Encoding.UTF8.GetString(frameData.TitleBytes);
               if (title == "/books/namechange")

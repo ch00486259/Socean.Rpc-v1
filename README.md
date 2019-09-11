@@ -111,7 +111,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在双�
   
   1.客户端需将NetworkSettings.LoadTest设置成true，可大大提高客户端的收发效率  
   2.客户端并发线程数20即可  
-  3.客户端需调用同步Query，异步Query很难对Server造成压力
+  3.客户端需调用同步Query，能最大效率的利用客户端资源
    
   
   

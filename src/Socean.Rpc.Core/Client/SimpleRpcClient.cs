@@ -14,7 +14,7 @@ namespace Socean.Rpc.Core.Client
         private volatile int _messageId = 0;
         private readonly object _queryKey = new object();
         private volatile TcpTransport _transport;
-        private readonly QueryContext _queryContext;
+        private readonly IQueryContext _queryContext;
 
         public SimpleRpcClient(IPAddress ip, int port)
         {
@@ -23,6 +23,8 @@ namespace Socean.Rpc.Core.Client
 
             _transport = new TcpTransport(this, ServerIP, ServerPort);
             _queryContext = new QueryContext();
+            if (NetworkSettings.LoadTest)
+                _queryContext = new HighResponseQueryContextFacade(_queryContext);
         }
 
         public async Task<FrameData> QueryAsync(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)

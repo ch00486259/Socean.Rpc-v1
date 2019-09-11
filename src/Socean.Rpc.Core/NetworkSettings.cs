@@ -117,6 +117,8 @@ namespace Socean.Rpc.Core
             set { _serverTcpSendMode = value; }
         }
 
+        public static bool LoadTest { get; set; }
+
         public static byte[] GetClientKeepAliveInfo()
         {
             var uintSize = Marshal.SizeOf(0);

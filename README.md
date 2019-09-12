@@ -53,9 +53,8 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在双�
 
   2.启动服务
   
-    var server = new KeepAliveRpcServer();
-    server.Bind(IPAddress.Any, 11111);
-    server.AutoReconnect = true;
+    var server = new RpcServer();
+    server.Bind(IPAddress.Any, 11111);    
     server.MessageProcessor = new DefaultMessageProcessor();
 
     server.Start();  

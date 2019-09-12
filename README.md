@@ -108,12 +108,10 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在双�
   
   
   性能测试建议(load test)：
-
-  1.压力测试时客户端需将NetworkSettings.ClientDetectReceiveInterval设置成1，可提高客户端的收发效率  
-  2.提升线程优先级至ThreadPriority.Highest  
-  3.客户端并发线程数最好是100至200之间  
-  4.压力测试的客户端最好用win7系统，因为win7的时间片精度有时能达到1ms  
-  5.最好是多机测试 
+  
+  1.客户端需将NetworkSettings.LoadTest设置成true，可大大提高客户端的收发效率  
+  2.客户端并发线程数20即可  
+  3.客户端需调用同步Query，能最大效率的利用客户端资源
    
   
   

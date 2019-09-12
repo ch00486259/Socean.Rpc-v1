@@ -169,12 +169,12 @@ namespace Socean.Rpc.Core.Client
             Close();
         }
 
-        internal override void ReceiveMessage(TcpTransport tcpTransport, FrameData frameData)
+        internal override void OnReceiveMessage(TcpTransport tcpTransport, FrameData frameData)
         {
             _queryContext.OnReceive(frameData);
         }
 
-        internal override void CloseTransport(TcpTransport tcpTransport)
+        internal override void OnTransportClosed(TcpTransport tcpTransport)
         {
 
         }

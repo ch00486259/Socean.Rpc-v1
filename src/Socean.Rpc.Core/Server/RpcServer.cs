@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -17,6 +19,7 @@ namespace Socean.Rpc.Core.Server
         public IPAddress ServerIP { get; private set; }
         public int ServerPort { get; private set; }
         public IMessageProcessor MessageProcessor { get; set; }
+        private ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>();
 
         /// <summary>
         /// description：
@@ -139,6 +142,8 @@ namespace Socean.Rpc.Core.Server
 
             var tcpTransport = new TcpTransport(this, ipEndPoint.Address, ipEndPoint.Port);
 
+            _clientTransportDictionary[ipEndPoint.Address+"_"+ ipEndPoint.Port] = tcpTransport;
+
             try
             {
                 tcpTransport.Init(client);
@@ -157,7 +162,7 @@ namespace Socean.Rpc.Core.Server
             }
         }
 
-        internal override void ReceiveMessage(TcpTransport serverTransport, FrameData frameData)
+        internal override void OnReceiveMessage(TcpTransport serverTransport, FrameData frameData)
         {
             ProcessReceiveAsync(serverTransport, frameData, MessageProcessor);
         }
@@ -218,10 +223,12 @@ namespace Socean.Rpc.Core.Server
             return await messageProcessor.Process(frameData);
         }
 
-        internal override void CloseTransport(TcpTransport transport)
+        internal override void OnTransportClosed(TcpTransport transport)
         {
             if (transport == null)
                 return;
+
+            _clientTransportDictionary.TryRemove(transport.RemoteIP + "_" + transport.RemotePort,out var _) ;
         }
 
         public void Close()
@@ -243,6 +250,12 @@ namespace Socean.Rpc.Core.Server
             catch
             {
 
+            }
+
+            var clientTransportList = _clientTransportDictionary.Values.ToList();
+            foreach (var transport in clientTransportList)
+            {
+                transport.Close();
             }
 
             LogAgent.Info("server closed");

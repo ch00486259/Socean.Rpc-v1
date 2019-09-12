@@ -87,30 +87,27 @@ namespace Socean.Rpc.Core.Client
     {
         public HighResponseQueryContextFacade(IQueryContext queryContext)
         {
-            _queryContext = (QueryContext)queryContext;
+            _queryContext = queryContext;
         }
 
-        private QueryContext _queryContext;
+        private IQueryContext _queryContext;
         private AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
 
         public void Reset(int messageId)
         {
             _queryContext.Reset(messageId);
-
             _autoResetEvent.Reset();
         }
 
         public void OnReceive(FrameData frameData)
         {
             _queryContext.OnReceive(frameData);
-
             _autoResetEvent.Set();
         }
 
         public FrameData WaitForResult(int messageId, int millisecondsTimeout)
         {
             _autoResetEvent.WaitOne(millisecondsTimeout);
-
             return _queryContext.WaitForResult(messageId, 0);
         }
 

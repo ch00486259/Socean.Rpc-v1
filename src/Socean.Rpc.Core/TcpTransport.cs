@@ -216,7 +216,7 @@ namespace Socean.Rpc.Core
 
         private void OnReceive(FrameData messageData)
         {
-            _transportHost.ReceiveMessage(this, messageData);
+            _transportHost.OnReceiveMessage(this, messageData);
         }
 
         public void Close()
@@ -230,6 +230,15 @@ namespace Socean.Rpc.Core
 
             try
             {
+                _socket.Shutdown(SocketShutdown.Both);
+            }
+            catch
+            {
+
+            }
+
+            try
+            {
                 _socket.Close();
             }
             catch
@@ -237,7 +246,7 @@ namespace Socean.Rpc.Core
 
             }
 
-            _transportHost.CloseTransport(this);
+            _transportHost.OnTransportClosed(this);
         }
 
         public void Dispose()

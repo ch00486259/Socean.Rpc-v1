@@ -58,7 +58,6 @@
     <Compile Include="ResponseBase.cs" />
     <Compile Include="ResponseCode.cs" />
     <Compile Include="NetworkSettings.cs" />
-    <Compile Include="Server\KeepAliveRpcServer.cs" />
     <Compile Include="IMessageProcessor.cs" />
     <Compile Include="IKeepAlive.cs" />
     <Compile Include="Server\RpcServer.cs" />

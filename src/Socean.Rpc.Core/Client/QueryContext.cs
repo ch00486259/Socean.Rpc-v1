@@ -9,7 +9,7 @@ namespace Socean.Rpc.Core.Client
 {
     internal class QueryContext: IQueryContext
     {
-        internal readonly ConcurrentDictionary<int, FrameData> _receiveDataDictionary = new ConcurrentDictionary<int, FrameData>();
+        private readonly ConcurrentDictionary<int, FrameData> _receiveDataDictionary = new ConcurrentDictionary<int, FrameData>();
 
         public void Reset(int messageId)
         {
@@ -22,51 +22,52 @@ namespace Socean.Rpc.Core.Client
                 _receiveDataDictionary.TryUpdate(frameData.MessageId, frameData, null);
         }
 
-        public FrameData WaitForResult(int messageId)
+        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
         {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-
-            FrameData receiveData = null;
-
-            while (true)
+            if (millisecondsTimeout > 0)
             {
-                if(stopWatch.ElapsedMilliseconds > NetworkSettings.ReceiveTimeout)
-                    break;
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
 
-                Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
-              
-                _receiveDataDictionary.TryGetValue(messageId, out receiveData);
-                if (receiveData != null)
-                    break;
+                while (true)
+                {
+                    if (stopWatch.ElapsedMilliseconds > millisecondsTimeout)
+                        break;
+
+                    Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
+
+                    _receiveDataDictionary.TryGetValue(messageId, out var _receiveData);
+                    if (_receiveData != null)
+                        break;
+                }
+
+                stopWatch.Stop();
             }
 
-            _receiveDataDictionary.TryRemove(messageId, out var _);
-            stopWatch.Stop();
+            _receiveDataDictionary.TryRemove(messageId, out var receiveData);
             return receiveData;
         }
 
-        public async Task<FrameData> WaitForResultAsync(int messageId)
+        public async Task<FrameData> WaitForResultAsync(int messageId, int millisecondsTimeout)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
-            FrameData receiveData = null;
-
             while (true)
             {
-                if (stopWatch.ElapsedMilliseconds > NetworkSettings.ReceiveTimeout)
+                if (stopWatch.ElapsedMilliseconds > millisecondsTimeout)
                     break;
 
                 await Task.Delay(NetworkSettings.ClientDetectReceiveInterval);
 
-                _receiveDataDictionary.TryGetValue(messageId, out receiveData);
-                if (receiveData != null)
+                _receiveDataDictionary.TryGetValue(messageId, out var _receiveData);
+                if (_receiveData != null)
                     break;
             }
 
-            _receiveDataDictionary.TryRemove(messageId, out var _);
             stopWatch.Stop();
+
+            _receiveDataDictionary.TryRemove(messageId, out var receiveData);
             return receiveData;
         }
     }
@@ -77,9 +78,9 @@ namespace Socean.Rpc.Core.Client
 
         void OnReceive(FrameData frameData);
 
-        FrameData WaitForResult(int messageId);
+        FrameData WaitForResult(int messageId, int millisecondsTimeout);
 
-        Task<FrameData> WaitForResultAsync(int messageId);
+        Task<FrameData> WaitForResultAsync(int messageId, int millisecondsTimeout);
     }
 
     internal class HighResponseQueryContextFacade : IQueryContext
@@ -106,17 +107,16 @@ namespace Socean.Rpc.Core.Client
             _autoResetEvent.Set();
         }
 
-        public FrameData WaitForResult(int messageId)
+        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
         {
-            _autoResetEvent.WaitOne(NetworkSettings.ReceiveTimeout);
+            _autoResetEvent.WaitOne(millisecondsTimeout);
 
-            _queryContext._receiveDataDictionary.TryRemove(messageId, out var receiveData);
-            return receiveData;
+            return _queryContext.WaitForResult(messageId, 0);
         }
 
-        public async Task<FrameData> WaitForResultAsync(int messageId)
+        public async Task<FrameData> WaitForResultAsync(int messageId, int millisecondsTimeout)
         {
-            return await _queryContext.WaitForResultAsync(messageId);
+            return await _queryContext.WaitForResultAsync(messageId, millisecondsTimeout);
         }
     }
 }

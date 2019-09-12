@@ -56,7 +56,7 @@ namespace Socean.Rpc.Core.Client
                     _transport.Send(sendBuffer, messageByteCount);
             }
 
-            var receiveData = await _queryContext.WaitForResultAsync(messageId);
+            var receiveData = await _queryContext.WaitForResultAsync(messageId, NetworkSettings.ReceiveTimeout);
             if (receiveData == null)
             {
                 _transport.Close();
@@ -133,7 +133,7 @@ namespace Socean.Rpc.Core.Client
                     _transport.Send(sendBuffer, messageByteCount);
             }
 
-            var receiveData = _queryContext.WaitForResult(messageId);
+            var receiveData = _queryContext.WaitForResult(messageId, NetworkSettings.ReceiveTimeout);
             if (receiveData == null)
             {
                 _transport.Close();

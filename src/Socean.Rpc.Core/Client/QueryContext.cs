@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,67 +6,119 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    internal class QueryContext: IQueryContext
+    public class SyncQueryContext : IQueryContext
     {
-        private readonly ConcurrentDictionary<int, FrameData> _receiveDataDictionary = new ConcurrentDictionary<int, FrameData>();
+        public SyncQueryContext()
+        {
+
+        }
+
+        private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
+        //private readonly ResetEvent _autoResetEvent = new ResetEvent();
+
+        private volatile FrameData _frameData;
+        private volatile int _messageId = -1;
 
         public void Reset(int messageId)
         {
-            _receiveDataDictionary[messageId] = null;
+            _messageId = messageId;
+            _frameData = null;
         }
 
-        public void OnReceive(FrameData frameData)
+        public bool OnReceive(FrameData frameData)
         {
-            if(frameData != null)
-                _receiveDataDictionary.TryUpdate(frameData.MessageId, frameData, null);
+            if (frameData == null)
+                return false;
+
+            if (_messageId != frameData.MessageId)
+                return false;
+            
+            _frameData = frameData;
+            _autoResetEvent.Set();
+
+            return true;
         }
 
-        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
+        public Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout)
         {
-            if (millisecondsTimeout > 0)
+            if (millisecondsTimeout == 0)
             {
-                var stopWatch = new Stopwatch();
-                stopWatch.Start();
+                var _receiveData = _frameData;
+                _frameData = null;
+                _messageId = -1;
 
-                while (true)
-                {
-                    if (stopWatch.ElapsedMilliseconds > millisecondsTimeout)
-                        break;
+                return Task.FromResult(_receiveData);
+            }
+            
+            _autoResetEvent.WaitOne(millisecondsTimeout);
+             
+            var receiveData = _frameData;
+            _frameData = null;
+            _messageId = -1;
 
-                    Thread.Sleep(NetworkSettings.ClientDetectReceiveInterval);
+            return Task.FromResult(receiveData);
+        }        
+    }
 
-                    _receiveDataDictionary.TryGetValue(messageId, out var _receiveData);
-                    if (_receiveData != null)
-                        break;
-                }
+    internal class AsyncQueryContext : IQueryContext
+    {
+        public AsyncQueryContext()
+        {
 
-                stopWatch.Stop();
+        }
+
+        private volatile FrameData _frameData;
+        private volatile int _messageId = -1;
+
+        public void Reset(int messageId)
+        {
+            _messageId = messageId;
+            _frameData = null;
+        }
+
+        public bool OnReceive(FrameData frameData)
+        {
+            if (frameData == null)
+                return false;
+
+            if (_messageId != frameData.MessageId)
+                return false;
+
+            _frameData = frameData;
+            return true;
+        } 
+
+        public async Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout)
+        {
+            if (millisecondsTimeout == 0)
+            {
+                var _receiveData = _frameData;
+                _frameData = null;
+                _messageId = -1;
+
+                return _receiveData;
             }
 
-            _receiveDataDictionary.TryRemove(messageId, out var receiveData);
-            return receiveData;
-        }
-
-        public async Task<FrameData> WaitForResultAsync(int messageId, int millisecondsTimeout)
-        {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
             while (true)
             {
+                if (_frameData != null)
+                    break;
+
                 if (stopWatch.ElapsedMilliseconds > millisecondsTimeout)
                     break;
 
                 await Task.Delay(NetworkSettings.ClientDetectReceiveInterval);
-
-                _receiveDataDictionary.TryGetValue(messageId, out var _receiveData);
-                if (_receiveData != null)
-                    break;
             }
 
             stopWatch.Stop();
 
-            _receiveDataDictionary.TryRemove(messageId, out var receiveData);
+            var receiveData = _frameData;
+            _frameData = null;
+            _messageId = -1;
+
             return receiveData;
         }
     }
@@ -76,11 +127,9 @@ namespace Socean.Rpc.Core.Client
     {
         void Reset(int messageId);
 
-        void OnReceive(FrameData frameData);
+        bool OnReceive(FrameData frameData);
 
-        FrameData WaitForResult(int messageId, int millisecondsTimeout);
-
-        Task<FrameData> WaitForResultAsync(int messageId, int millisecondsTimeout);
+        Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout);
     }
 
     internal class HighResponseQueryContextFacade : IQueryContext
@@ -91,29 +140,83 @@ namespace Socean.Rpc.Core.Client
         }
 
         private IQueryContext _queryContext;
-        private AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
+
+        private TaskCompletionSource<int> _taskCompletionSource;
 
         public void Reset(int messageId)
         {
             _queryContext.Reset(messageId);
-            _autoResetEvent.Reset();
+                     
+            _taskCompletionSource = new TaskCompletionSource<int>();
         }
 
-        public void OnReceive(FrameData frameData)
+        public bool OnReceive(FrameData frameData)
         {
-            _queryContext.OnReceive(frameData);
-            _autoResetEvent.Set();
+            var isReceiveValid = _queryContext.OnReceive(frameData);
+            if (!isReceiveValid)
+                return false;
+
+            if (_taskCompletionSource != null)
+                _taskCompletionSource.SetResult(0);
+
+            return true;
+        }
+             
+        public async Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout)
+        {
+            var loopCount = (millisecondsTimeout / 15) + 1;
+
+            for (var i = 0; i < loopCount; i++)
+            {
+                var task = Task.Delay(15);
+
+                var t = Task.WhenAny(task, _taskCompletionSource.Task);
+                await t;
+
+                if (_taskCompletionSource.Task.IsCompleted)
+                    break;
+            }
+
+            _taskCompletionSource = null;
+
+            return await _queryContext.WaitForResult(messageId, 0);
+        }
+    }
+
+    public class ResetEvent
+    {
+        private object _key = new object();
+
+        private bool _setFlag = false;
+
+        public void Set()
+        {
+            lock (_key)
+            {
+                _setFlag = true;
+
+                Monitor.Pulse(_key);
+            }
         }
 
-        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
+        public void WaitOne(int timeoutMilliseconds)
         {
-            _autoResetEvent.WaitOne(millisecondsTimeout);
-            return _queryContext.WaitForResult(messageId, 0);
-        }
+            lock (_key)
+            {
+                if (_setFlag == true)
+                {
+                    _setFlag = false;
+                    return;
+                }
 
-        public async Task<FrameData> WaitForResultAsync(int messageId, int millisecondsTimeout)
-        {
-            return await _queryContext.WaitForResultAsync(messageId, millisecondsTimeout);
+                var isTimeout = Monitor.Wait(_key, timeoutMilliseconds);
+                if (isTimeout == false)
+                {
+                    _setFlag = false;
+                    return;
+                }
+                _setFlag = false;
+            }
         }
     }
 }

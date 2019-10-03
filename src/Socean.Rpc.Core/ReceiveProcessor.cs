@@ -1,5 +1,5 @@
-﻿using System;
-using Socean.Rpc.Core.Message;
+﻿using Socean.Rpc.Core.Message;
+using System;
 
 namespace Socean.Rpc.Core
 {
@@ -7,9 +7,7 @@ namespace Socean.Rpc.Core
     {
         internal ReceiveProcessor()
         {
-            _currentStepReadBuffer = FrameFormat.EmptyBytes;
-
-            _readBufferCache = new byte[NetworkSettings.ReadBufferSize];
+            _readBuffer = new byte[NetworkSettings.ReadBufferSize];
             _tempFrameHeaderData = new FrameHeaderData(); 
         }
 
@@ -23,77 +21,121 @@ namespace Socean.Rpc.Core
         private byte[] _titleBytes;
         private byte[] _contentBytes;
 
-        /// <summary>
-        /// 0 header 1 body 2 finished
-        /// </summary>
-        private int _step;
+        private volatile int _messageBytesReadLength = 0;
 
-        private int _currentStepReadCount;
-        private int _currentStepReadBufferSize;
-        private byte[] _currentStepReadBuffer;
+        private volatile int _bufferStartIndex = 0;
+        private readonly byte[] _readBuffer;
 
-        private readonly byte[] _readBufferCache;
+        private volatile FrameHeaderData _currentFrameHeaderData;
         private readonly FrameHeaderData _tempFrameHeaderData;
+
+        private volatile int _unprocessCount = 0;
+
 
         internal void Reset()
         {
-            StepTo(0);
+            _unprocessCount = 0;
+            _bufferStartIndex = 0;
+            _messageBytesReadLength = 0;
+
+            _headerExtentionBytes = FrameFormat.EmptyBytes;
+            _titleBytes = FrameFormat.EmptyBytes;
+            _contentBytes = FrameFormat.EmptyBytes;
+
+            _currentFrameHeaderData = null;
         }
 
-        private void ChangeToStep(int step, byte[] buffer, int bufferSize)
+        internal void GetNextReceiveCallbackData(ref ReceiveCallbackData tempReceiveCallbackData)
         {
-            _step = step;
-            _currentStepReadBuffer = buffer;
-            _currentStepReadBufferSize = bufferSize;
-            _currentStepReadCount = 0;
+            tempReceiveCallbackData.Bind(_readBuffer, _bufferStartIndex, _readBuffer.Length - _bufferStartIndex);
         }
 
-        private byte[] GetBodyReadBuffer(int byteCount)
+        private int GetBodyLength()
         {
-            if (byteCount <= _readBufferCache.Length)
+            return _headerExtentionLength + _titleLength + _contentLength;
+        }
+
+        private int ReadExtentionBytes(int toOffset, int fromOffset, int readCount)
+        {
+            var returnValue = _headerExtentionLength - toOffset;
+            if (returnValue > readCount)
+                returnValue = readCount;
+
+            Buffer.BlockCopy(_readBuffer, fromOffset, _headerExtentionBytes, toOffset, returnValue);
+            return returnValue;
+        }
+
+        private int ReadTitleBytes(int toOffset, int fromOffset, int readCount)
+        {
+            var returnValue = _titleLength + _headerExtentionLength - toOffset;
+            if (returnValue > readCount)
+                returnValue = readCount;
+
+            Buffer.BlockCopy(_readBuffer, fromOffset, _titleBytes, toOffset - _headerExtentionLength, returnValue);
+            return returnValue;
+        }
+
+        private int ReadContentBytes(int toOffset, int fromOffset, int readCount)
+        {
+            var returnValue = _contentLength + _titleLength + _headerExtentionLength - toOffset;
+            if (returnValue > readCount)
+                returnValue = readCount;
+
+            Buffer.BlockCopy(_readBuffer, fromOffset, _contentBytes, toOffset - _headerExtentionLength - _titleLength, returnValue);
+            return returnValue;
+        }
+
+        private void ReadBufferDatas(int unprocessedByteCount)
+        {
+            var fromOffset = _bufferStartIndex - unprocessedByteCount;
+            var toOffset = _messageBytesReadLength - FrameFormat.FrameHeaderSize - unprocessedByteCount ;
+            var currentReadCount = 0;
+            
+            if (toOffset < _headerExtentionLength )
             {
-                return _readBufferCache;               
+                if (_headerExtentionLength > 0)
+                {
+                    if (currentReadCount == unprocessedByteCount)
+                        return;
+                    currentReadCount += ReadExtentionBytes(toOffset + currentReadCount, fromOffset + currentReadCount, unprocessedByteCount - currentReadCount);
+                }              
             }
-            else
+            if (toOffset < _titleLength + _headerExtentionLength )
             {
-                return new byte[byteCount];               
+                if (_titleLength > 0)
+                {
+                    if (currentReadCount == unprocessedByteCount)
+                        return;
+                    currentReadCount += ReadTitleBytes(toOffset + currentReadCount, fromOffset + currentReadCount, unprocessedByteCount - currentReadCount);
+                }              
+            }
+            if (toOffset < _contentLength + _titleLength + _headerExtentionLength )
+            {
+                if (_contentLength > 0)
+                {
+                    if (currentReadCount == unprocessedByteCount)
+                        return;
+                    currentReadCount += ReadContentBytes(toOffset + currentReadCount, fromOffset + currentReadCount, unprocessedByteCount - currentReadCount);
+                }
             }
         }
 
-        private void StepTo(int step)
+
+        internal int CheckCurrentStep(int readCount)
         {
-            if (step == 0)
+            _messageBytesReadLength += readCount;
+            _bufferStartIndex += readCount;
+
+            if (_currentFrameHeaderData == null)
             {
-                var readBuffer = GetBodyReadBuffer(FrameFormat.FrameHeaderSize);
-                ChangeToStep(0, readBuffer, FrameFormat.FrameHeaderSize);
-            }
+                if (_messageBytesReadLength < FrameFormat.FrameHeaderSize)
+                    return 0;
 
-            if (step == 1)
-            {
-                var bodyByteLength = _headerExtentionLength + _titleLength + _contentLength;
-                var readBuffer = GetBodyReadBuffer(bodyByteLength);
-
-                ChangeToStep(1, readBuffer, bodyByteLength);
-            }
-
-            if (step == 2)
-            {
-                ChangeToStep(2, FrameFormat.EmptyBytes, 0); 
-            }
-        }
-
-
-        internal void CheckCurrentReceive(int readCount)
-        {
-            if (_step == 0)
-            {
-                _currentStepReadCount += readCount;
-
-                if (FrameFormat.CheckFrameHeader(_currentStepReadBuffer, _currentStepReadCount) == false)
-                    throw new Exception("step:0, CheckHeader error");
+                if (FrameFormat.CheckFrameHeader(_readBuffer) == false)
+                    return -1;
 
                 var frameHeaderData = _tempFrameHeaderData;
-                FrameFormat.ReadDataFromHeaderBuffer(_currentStepReadBuffer,ref frameHeaderData);
+                FrameFormat.ReadDataFromHeaderBuffer(_readBuffer, ref frameHeaderData);
 
                 _headerExtentionLength = frameHeaderData.HeaderExtentionLength;
                 _titleLength = frameHeaderData.TitleLength;
@@ -101,71 +143,49 @@ namespace Socean.Rpc.Core
                 _stateCode = frameHeaderData.StateCode;
                 _messageId = frameHeaderData.MessageId;
 
-                if (_headerExtentionLength + _titleLength + _contentLength == 0)
-                {
-                    _headerExtentionBytes = FrameFormat.EmptyBytes;
-                    _titleBytes = FrameFormat.EmptyBytes;
-                    _contentBytes = FrameFormat.EmptyBytes; 
+                _currentFrameHeaderData = frameHeaderData;
 
-                    StepTo(2);
-                    return;
-                }
+                _headerExtentionBytes = _headerExtentionLength == 0 ? FrameFormat.EmptyBytes : new byte[_headerExtentionLength];
+                _titleBytes = _titleLength == 0 ? FrameFormat.EmptyBytes : new byte[_titleLength];
+                _contentBytes = _contentLength == 0 ? FrameFormat.EmptyBytes : new byte[_contentLength];
 
-                StepTo(1);
-                return;
+                if (GetBodyLength() == 0)
+                    return _messageBytesReadLength == FrameFormat.FrameHeaderSize ? 1 : -1;
+
+                readCount = readCount - FrameFormat.FrameHeaderSize;
             }
 
-            if (_step == 1)
+            _unprocessCount += readCount;
+
+            var messageLength = GetBodyLength() + FrameFormat.FrameHeaderSize;
+
+            // message format error,return error code
+            if (_messageBytesReadLength > messageLength)            
+                return -1;            
+
+            // read datas and return success code
+            if (_messageBytesReadLength == messageLength)
             {
-                _currentStepReadCount += readCount;
-
-                if (_currentStepReadCount < _headerExtentionLength + _titleLength + _contentLength)
-                    return;
-
-                if (_currentStepReadCount != _headerExtentionLength + _titleLength + _contentLength)
-                    throw new Exception("message body length error");
-
-                _headerExtentionBytes = new byte[_headerExtentionLength];
-                if (_headerExtentionLength > 0)
-                {
-                    Array.Copy(_currentStepReadBuffer, 0, _headerExtentionBytes, 0, _headerExtentionLength);
-                }
-
-                _titleBytes = new byte[_titleLength];
-
-                if (_titleLength > 0)
-                {
-                    Array.Copy(_currentStepReadBuffer, _headerExtentionLength, _titleBytes, 0, _titleLength);
-                }
-
-                _contentBytes = new byte[_contentLength];
-
-                if (_contentLength > 0)
-                {
-                    Array.Copy(_currentStepReadBuffer, _headerExtentionLength + _titleLength, _contentBytes, 0, _contentLength);
-                }
-
-                StepTo(2);
-                return;
+                ReadBufferDatas(_unprocessCount);
+                return 1;
             }
 
-            if (_step == 2)
-                throw new Exception("CheckCurrentReceive error,step 2 is not valid");
-        }
+            // message is not complete,return continue-reading code
+            // if buffer is full,move datas to cache and clear buffer
+            if (_bufferStartIndex == _readBuffer.Length)
+            {
+                ReadBufferDatas(_unprocessCount);
+                _unprocessCount = 0;
+                _bufferStartIndex = 0;
+            }
 
-        internal void GetNextReceiveCallbackData(ref ReceiveCallbackData tempReceiveCallbackData)
-        {
-            tempReceiveCallbackData.Bind(_currentStepReadBuffer, _currentStepReadCount, _currentStepReadBufferSize - _currentStepReadCount);
+            //continue to read
+            return 0;            
         }
 
         internal FrameData GetCurrentReceiveData()
         {
-            if (_step == 2)
-            {
-                return new FrameData(_headerExtentionBytes, _titleBytes, _contentBytes, _stateCode, _messageId);
-            }
-
-            return null;
+            return new FrameData(_headerExtentionBytes, _titleBytes, _contentBytes, _stateCode, _messageId);
         }
     }
 }

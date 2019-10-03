@@ -59,10 +59,8 @@
     <Compile Include="ResponseCode.cs" />
     <Compile Include="NetworkSettings.cs" />
     <Compile Include="IMessageProcessor.cs" />
-    <Compile Include="IKeepAlive.cs" />
     <Compile Include="Server\RpcServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="KeepAliveMonitor.cs" />
     <Compile Include="TcpTransport.cs" />
   </ItemGroup>
   <ItemGroup />

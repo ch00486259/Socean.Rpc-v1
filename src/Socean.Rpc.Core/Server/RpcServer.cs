@@ -108,29 +108,39 @@ namespace Socean.Rpc.Core.Server
                 client = server.EndAccept(ar);
                 ipEndPoint = (IPEndPoint)client.RemoteEndPoint;
             }
-            catch
+            catch(Exception ex)
             {
-
+                LogAgent.Error(ex.Message);
             }
 
             try
             {
                 server.BeginAccept(AcceptSocketCallback, server);
             }
-            catch
+            catch(Exception ex)
             {
                 Close();
+                try
+                {
+                    if (client != null)
+                        client.Close();
+                }
+                catch
+                {
+
+                }
+
+                LogAgent.Error(ex.Message);
+
                 return;
             }
-
-            if (client == null)
-                return;
 
             if (ipEndPoint == null)
             {
                 try
                 {
-                    client.Close();
+                    if (client != null)
+                        client.Close();
                 }
                 catch
                 {
@@ -142,13 +152,11 @@ namespace Socean.Rpc.Core.Server
 
             var tcpTransport = new TcpTransport(this, ipEndPoint.Address, ipEndPoint.Port);
 
-            _clientTransportDictionary[ipEndPoint.Address+"_"+ ipEndPoint.Port] = tcpTransport;
-
             try
             {
                 tcpTransport.Init(client);
             }
-            catch
+            catch(Exception ex)
             {
                 try
                 {
@@ -158,17 +166,21 @@ namespace Socean.Rpc.Core.Server
                 {
 
                 }
+
+                LogAgent.Error(ex.Message);
                 return;
             }
+
+            _clientTransportDictionary[tcpTransport.Key] = tcpTransport;
         }
 
         internal override void OnReceiveMessage(TcpTransport serverTransport, FrameData frameData)
         {
-            ProcessReceiveAsync(serverTransport, frameData, MessageProcessor);
+            ProcessReceive(serverTransport, frameData, MessageProcessor);
         }
 
-        private static async Task ProcessReceiveAsync(TcpTransport serverTransport, FrameData frameData,
-            IMessageProcessor messageProcessor)
+        private static async void ProcessReceive(TcpTransport serverTransport, FrameData frameData,
+           IMessageProcessor messageProcessor)
         {
             byte[] responseExtention = null;
             byte[] responseContent = null;
@@ -176,7 +188,27 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                var response = await ProcessAsync(frameData, messageProcessor);
+                ResponseBase response = null;
+
+                if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
+                    response = new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
+
+                if (messageProcessor == null)
+                    response = new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
+
+                if (response == null)
+                {
+                    if (NetworkSettings.ServerProcessMode == CommunicationMode.Sync)
+                    {
+                        var responseTask = messageProcessor.Process(frameData);
+                        responseTask.Wait();
+                        response = responseTask.Result;
+                    }
+                    else
+                    { 
+                        response = await messageProcessor.Process(frameData);  
+                    }
+                }
 
                 responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;
                 responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
@@ -191,44 +223,34 @@ namespace Socean.Rpc.Core.Server
 
             try
             {
-                var tuple = FrameFormat.GenerateFrameBytes(responseExtention, FrameFormat.EmptyBytes, responseContent, responseCode, frameData.MessageId);
+                var messageByteCount = FrameFormat.ComputeFrameByteCount(responseExtention, FrameFormat.EmptyBytes, responseContent);
+                var sendBuffer = serverTransport.SendBufferCache.Get(messageByteCount);
 
-                var sendBuffer = tuple.Item1;
-                var messageByteCount = tuple.Item2;
+                FrameFormat.FillFrame(sendBuffer, responseExtention, FrameFormat.EmptyBytes, responseContent, responseCode, frameData.MessageId);
 
-                if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
-                {
-                    serverTransport.SendAsync(sendBuffer, messageByteCount);
-                }
-                else
-                {
-                    serverTransport.Send(sendBuffer, messageByteCount);
-                }
+                //if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
+                //{
+                //    serverTransport.SendAsync(sendBuffer, messageByteCount);
+                //}
+                //else
+                //{
+                serverTransport.Send(sendBuffer, messageByteCount);
+                //}
+
+                serverTransport.SendBufferCache.Cache(sendBuffer);
             }
             catch
             {
                 serverTransport.Close();
-                return;
             }
         }
 
-        private static async Task<ResponseBase> ProcessAsync(FrameData frameData, IMessageProcessor messageProcessor)
-        {
-            if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
-                return new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
-
-            if (messageProcessor == null)
-                return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
-
-            return await messageProcessor.Process(frameData);
-        }
-
-        internal override void OnTransportClosed(TcpTransport transport)
+        internal override void OnCloseTransport(TcpTransport transport)
         {
             if (transport == null)
                 return;
 
-            _clientTransportDictionary.TryRemove(transport.RemoteIP + "_" + transport.RemotePort,out var _) ;
+            _clientTransportDictionary.TryRemove(transport.Key,out var _) ;
         }
 
         public void Close()

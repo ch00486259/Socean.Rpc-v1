@@ -50,7 +50,7 @@ namespace Socean.Rpc.Core.Client
             if (factory != null)
                 return factory;
 
-            throw new Exception();
+            throw new Exception("GetOrAddFactory error");
         }
 
 

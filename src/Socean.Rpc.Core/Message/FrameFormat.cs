@@ -13,6 +13,9 @@ namespace Socean.Rpc.Core.Message
 
         public static readonly byte[] EmptyBytes = new byte[0];
 
+        [ThreadStatic]
+        static byte[] hashCodeByteArray;
+
         /// <summary>
         /// 0 7e 126
         /// 1 7f 127
@@ -35,11 +38,8 @@ namespace Socean.Rpc.Core.Message
         /// 18 hash code
         /// </summary>
         /// <returns></returns>
-        public static bool CheckFrameHeader(byte[] buffer,int readCount)
+        public static bool CheckFrameHeader(byte[] buffer)
         {
-            if (readCount != FrameHeaderSize)
-                return false;
-
             if (buffer.Length < FrameHeaderSize)
                 return false;
 
@@ -54,15 +54,18 @@ namespace Socean.Rpc.Core.Message
             var contentLength = buffer[6] << 24 | buffer[7] << 16 | buffer[8] << 8 | buffer[9];
             var messageId = buffer[11] << 24 | buffer[12] << 16 | buffer[13] << 8 | buffer[14];
 
-            var hashCodeArray = ComputeHashCode((Int16)extentionLength,(Int16)titleLength, contentLength, messageId);
+            if (hashCodeByteArray == null)
+                hashCodeByteArray = new byte[4];
 
-            return hashCodeArray[0] == buffer[15] && hashCodeArray[1] == buffer[16] && hashCodeArray[2] == buffer[17] && hashCodeArray[3] == buffer[18];
+            ComputeHashCode(hashCodeByteArray,(Int16)extentionLength,(Int16)titleLength, contentLength, messageId);
+
+            return hashCodeByteArray[0] == buffer[15] && hashCodeByteArray[1] == buffer[16] && hashCodeByteArray[2] == buffer[17] && hashCodeByteArray[3] == buffer[18];
         }
 
         public static void FillFrameHeader(byte[] buffer, byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes, byte stateCode, int messageId)
         {
             if (buffer == null)
-                throw new Exception("FillFrameHeader failed,buffer is null");
+                throw new ArgumentNullException("buffer");
 
             if (extentionBytes == null)
                 extentionBytes = EmptyBytes;
@@ -74,7 +77,7 @@ namespace Socean.Rpc.Core.Message
                 contentBytes = EmptyBytes;
 
             if (titleBytes.Length > 65535)
-                throw new Exception("FillFrameHeader failed,titleBytes length error");
+                throw new ArgumentOutOfRangeException("titleBytes");
 
             var extentionLength = extentionBytes.Length;
             var titleLength = titleBytes.Length;
@@ -101,18 +104,21 @@ namespace Socean.Rpc.Core.Message
             buffer[13] = (byte)(messageId >> 8);
             buffer[14] = (byte)messageId;
 
-            var hashCodeArray = ComputeHashCode((Int16)extentionLength,(Int16)titleLength, contentLength, messageId);
+            if (hashCodeByteArray == null)
+                hashCodeByteArray = new byte[4];
 
-            buffer[15] = hashCodeArray[0];
-            buffer[16] = hashCodeArray[1];
-            buffer[17] = hashCodeArray[2];
-            buffer[18] = hashCodeArray[3];
+            ComputeHashCode(hashCodeByteArray,(Int16)extentionLength,(Int16)titleLength, contentLength, messageId);
+
+            buffer[15] = hashCodeByteArray[0];
+            buffer[16] = hashCodeByteArray[1];
+            buffer[17] = hashCodeByteArray[2];
+            buffer[18] = hashCodeByteArray[3];
         }
 
         public static void FillFrameBody(byte[] buffer, byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes)
         {
             if (buffer == null)
-                throw new Exception("FillFrameBody falied,buffer is null");
+                throw new ArgumentNullException("buffer");
 
             if (extentionBytes == null)
                 extentionBytes = EmptyBytes;
@@ -124,36 +130,28 @@ namespace Socean.Rpc.Core.Message
                 contentBytes = EmptyBytes;
 
             if (extentionBytes.Length > 0)
-                Array.Copy(extentionBytes, 0, buffer, FrameHeaderSize, extentionBytes.Length);
+                Buffer.BlockCopy(extentionBytes, 0, buffer, FrameHeaderSize, extentionBytes.Length);
 
             if (titleBytes.Length > 0)
-                Array.Copy(titleBytes, 0, buffer, FrameHeaderSize + extentionBytes.Length, titleBytes.Length);
+                Buffer.BlockCopy(titleBytes, 0, buffer, FrameHeaderSize + extentionBytes.Length, titleBytes.Length);
 
             if (contentBytes.Length > 0)
-                Array.Copy(contentBytes, 0, buffer, FrameHeaderSize + extentionBytes.Length + titleBytes.Length, contentBytes.Length);
+                Buffer.BlockCopy(contentBytes, 0, buffer, FrameHeaderSize + extentionBytes.Length + titleBytes.Length, contentBytes.Length);
         }
 
-        private static byte[] ComputeHashCode(Int16 extentionByteLength, Int16 titleByteLength, int contentByteLength,int messageId)
+        private static void ComputeHashCode(byte[] hashCodeByteArray,Int16 extentionByteLength, Int16 titleByteLength, int contentByteLength,int messageId)
         {
             var hashCode = HeaderBit0 << 8 | HeaderBit1;
 
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 3; i++)
             {
-                hashCode = hashCode << 2;
-                hashCode = hashCode ^ messageId;
-                hashCode = hashCode ^ extentionByteLength;
-                hashCode = hashCode ^ titleByteLength;
-                hashCode = hashCode ^ contentByteLength;
-            }
-
-            var hashCodeByteArray = new byte[4];
+                hashCode = (hashCode << 2) ^ messageId ^ extentionByteLength ^ titleByteLength ^ contentByteLength;
+            }                                   
 
             hashCodeByteArray[0] = (byte)(hashCode >> 24);
             hashCodeByteArray[1] = (byte)(hashCode >> 16);
             hashCodeByteArray[2] = (byte)(hashCode >> 8);
-            hashCodeByteArray[3] = (byte)(hashCode);
-
-            return hashCodeByteArray;
+            hashCodeByteArray[3] = (byte)(hashCode);            
         }
 
         public static int ComputeFrameByteCount(byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes)
@@ -180,31 +178,10 @@ namespace Socean.Rpc.Core.Message
             frameHeaderData.Bind((Int16)extentionLength,(Int16)titleLength, contentLength, buffer[10], messageId);
         }
 
-        public static Tuple<byte[],int> GenerateFrameBytes(byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes, byte stateCode, int messageId)
+        public static void FillFrame(byte[] sendBuffer,byte[] extentionBytes, byte[] titleBytes, byte[] contentBytes, byte stateCode, int messageId)
         {
-            if (titleBytes == null)
-                titleBytes = EmptyBytes;
-
-            if (titleBytes.Length >= 65535)
-                throw new Exception("GenerateFrameBytes failed, title length error");
-
-            if (extentionBytes == null)
-                extentionBytes = EmptyBytes;
-
-            if (contentBytes == null)
-                contentBytes = EmptyBytes;
-
-            var messageByteCount = ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
-            var sendBuffer = GetBufferFromCache(messageByteCount);
             FillFrameHeader(sendBuffer, extentionBytes, titleBytes, contentBytes, stateCode, messageId);
             FillFrameBody(sendBuffer, extentionBytes, titleBytes, contentBytes);
-
-            return new Tuple<byte[], int>(sendBuffer, messageByteCount);
-        }
-
-        private static byte[] GetBufferFromCache(int byteCount)
-        {
-            return new byte[byteCount];
-        }
+        }        
     }
 }

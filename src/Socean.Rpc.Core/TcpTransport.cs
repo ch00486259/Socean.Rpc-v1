@@ -15,7 +15,6 @@ namespace Socean.Rpc.Core
             Key = ip + "_" + port;
 
             _transportHost = transportHost;
-
             _state = 0;
             _receiveProcessor = new ReceiveProcessor();
         }
@@ -25,7 +24,6 @@ namespace Socean.Rpc.Core
         public int RemotePort { get;  }
 
         private readonly TcpTransportHostBase _transportHost;
-
         private readonly ReceiveProcessor _receiveProcessor;
         private Socket _socket;
         private ReceiveCallbackData _tempReceiveCallbackData = new ReceiveCallbackData();
@@ -58,16 +56,24 @@ namespace Socean.Rpc.Core
                 _socket.NoDelay = true;
                 _socket.ReceiveTimeout = NetworkSettings.ReceiveTimeout;
                 _socket.SendTimeout = NetworkSettings.SendTimeout;
+
+                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, 4000);
+                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 4000);
+
                 _socket.Connect(RemoteIP, RemotePort);
             }
             else
             {
                 _socket = socket;
                 _socket.NoDelay = true;
+
+                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, 4000);
+                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 4000);
             }
 
-            BeginReceive();
+            BeginNewReceive(true);
         }
+              
 
         public bool? IsSocketConnected
         {
@@ -80,29 +86,21 @@ namespace Socean.Rpc.Core
             }
         }
 
-        private void BeginReceive()
+        private void BeginNewReceive(bool isReset = false)
         {
             try
             {
-                ResetReceiveProcessor();
-                BeginNextReceive();
+                if(isReset)
+                    _receiveProcessor.Reset();
+                _receiveProcessor.GetNextReceiveCallbackData(ref _tempReceiveCallbackData);
+                _socket.BeginReceive(_tempReceiveCallbackData.Buffer, _tempReceiveCallbackData.Offset, _tempReceiveCallbackData.Size, SocketFlags.None, ReceiveCallback, this);
             }
-            catch
+            catch(Exception ex)
             {
+                LogAgent.Error("tcpTransport BeginNewReceive,socket BeginReceive error", ex);
                 Close();
                 throw;
             }
-        }
-
-        private void ResetReceiveProcessor()
-        {
-            _receiveProcessor.Reset();
-        }
-
-        private void BeginNextReceive()
-        {
-            _receiveProcessor.GetNextReceiveCallbackData(ref _tempReceiveCallbackData);
-            _socket.BeginReceive(_tempReceiveCallbackData.Buffer, _tempReceiveCallbackData.Offset, _tempReceiveCallbackData.Size, SocketFlags.None, ReceiveCallback, this);
         }
 
         private static void SendCallback(IAsyncResult ar)
@@ -120,9 +118,9 @@ namespace Socean.Rpc.Core
             {
                 sendCount = serverTransport._socket.EndSend(ar);
             }
-            catch
+            catch(Exception ex)
             {
-
+                LogAgent.Error("tcpTransport SendCallback,socket EndSend error", ex);                 
             }
 
             if (sendCount <= 0)
@@ -134,66 +132,79 @@ namespace Socean.Rpc.Core
 
         private static void ReceiveCallback(IAsyncResult ar)
         {
-            var serverTransport = (TcpTransport)ar.AsyncState;
-            if (serverTransport == null)
+            var tcpTransport = (TcpTransport)ar.AsyncState;
+            if (tcpTransport == null)
                 return;
 
-            if (serverTransport._state != 1)
+            if (tcpTransport._state != 1)
                 return;
 
             int readCount = 0;
             try
             {
-                readCount = serverTransport._socket.EndReceive(ar);
+                readCount = tcpTransport._socket.EndReceive(ar);
             }
-            catch
+            catch(Exception ex)
             {
-
+                LogAgent.Error("tcpTransport ReceiveCallback,socket EndReceive error", ex);
             }
 
             if (readCount <= 0)
             {
-                serverTransport.Close();
+                tcpTransport.Close();
                 return;
             }
 
-            FrameData receiveData = null;
+            var receiveProcessor = tcpTransport._receiveProcessor;
 
             try
             {
-                var receiveProcessor = serverTransport._receiveProcessor;
-                receiveProcessor.CheckCurrentReceive(readCount);
-                receiveData = receiveProcessor.GetCurrentReceiveData();
-                if (receiveData == null)
+                var step = receiveProcessor.CheckCurrentStep(readCount);
+                if (step == -1)
+                    throw new Exception("tcpTransport ReceiveCallback,receiveProcessor CheckCurrentStep error");
+
+                if(step == 0)
                 {
-                    serverTransport.BeginNextReceive();
+                    tcpTransport.BeginNewReceive(false);
                     return;
                 }
-
-                receiveProcessor.Reset();
-                serverTransport.BeginNextReceive();
             }
-            catch
+            catch(Exception ex)
             {
-                serverTransport.Close();
+                tcpTransport.Close();
+                LogAgent.Error("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
                 return;
             }
 
-            serverTransport.OnReceive(receiveData);
+
+            try
+            {
+                FrameData receiveData = receiveProcessor.GetCurrentReceiveData();
+                tcpTransport.BeginNewReceive(true);
+                tcpTransport.OnReceive(receiveData);
+            }
+            catch (Exception ex)
+            {
+                tcpTransport.Close();
+                LogAgent.Error("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
+                return;
+            }
+
         }
 
         public void SendAsync(byte[] sendBuffer, int messageByteCount)
         {
             if (_state != 1)
-                throw new Exception("send falied,state error");
+                throw new Exception("tcpTransport SendAsync,state error");
 
             try
             {
                 _socket.BeginSend(sendBuffer, 0, messageByteCount, SocketFlags.None, SendCallback, this);
             }
-            catch
+            catch(Exception ex)
             {
                 Close();
+                LogAgent.Error("tcpTransport SendAsync,socket BeginSend error", ex);
                 throw;
             }
         }
@@ -201,15 +212,16 @@ namespace Socean.Rpc.Core
         public void Send(byte[] sendBuffer, int messageByteCount)
         {
             if (_state != 1)
-                throw new Exception("send falied,state error");
+                throw new Exception("tcpTransport send,state error");
 
             try
             {
                 _socket.Send(sendBuffer, messageByteCount, SocketFlags.None);
             }
-            catch
+            catch (Exception ex)
             {
                 Close();
+                LogAgent.Error("tcpTransport Send,socket Send error", ex);
                 throw;
             }
         }
@@ -246,12 +258,57 @@ namespace Socean.Rpc.Core
 
             }
 
-            _transportHost.OnTransportClosed(this);
+            _transportHost.OnCloseTransport(this);
         }
 
         public void Dispose()
         {
             Close();
+        }
+
+        internal BytesCache SendBufferCache = new BytesCache(NetworkSettings.WriteBufferSize);        
+    }
+
+    internal class BytesCache
+    {
+        internal BytesCache(int defaultByteLength)
+        {
+            if (defaultByteLength <= 0)
+                throw new Exception("BytesCache length error");
+
+            _defaultByteLength = defaultByteLength;
+            _buffer = new byte[_defaultByteLength];
+        }
+
+        private readonly int _defaultByteLength;
+
+        private volatile byte[] _buffer;
+
+        public byte[] Get(int byteCount)
+        {
+            if (byteCount > _defaultByteLength)
+                return new byte[byteCount];
+
+            //var original = Interlocked.Exchange(ref _buffer, null);
+
+            var original = _buffer;
+            _buffer = null;
+
+            if (original != null)
+                return original;
+
+            return new byte[_defaultByteLength];
+        }
+
+        public void Cache(byte[] bytes)
+        {
+            if (bytes == null)
+                return;
+
+            if (bytes.Length != _defaultByteLength)
+                return;
+
+            _buffer = bytes;
         }
     }
 

@@ -6,6 +6,6 @@ namespace Socean.Rpc.Core
     {
         internal abstract void OnReceiveMessage(TcpTransport tcpTransport, FrameData messageData);
 
-        internal abstract void OnTransportClosed(TcpTransport tcpTransport);
+        internal abstract void OnCloseTransport(TcpTransport tcpTransport);
     }
 }

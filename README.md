@@ -102,14 +102,12 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在双�
   其他：
      
   1.NetworkSettings类可修改连接超时时间等参数  
-  2.在某些高速响应的场景需求下，可以将NetworkSettings.ClientDetectReceiveInterval设置成0  
-  3.server端的最高并发处理量应该在50w以上(2核笔记本上可跑10W+，8核服务器跑50W应该没问题) 
   
   
   性能测试建议(load test)：
   
   1.客户端需将NetworkSettings.LoadTest设置成true，可大大提高客户端的收发效率  
-  2.客户端并发线程数20即可  
+  2.客户端并发线程数40即可  
   3.客户端需调用同步Query，能最大效率的利用客户端资源
    
   

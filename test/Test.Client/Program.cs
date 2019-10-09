@@ -1,8 +1,6 @@
 ﻿using Socean.Rpc.Core;
 using Socean.Rpc.Core.Client;
-using Socean.Rpc.Core.Server;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -18,22 +16,15 @@ namespace Test.Client
         static IPAddress _ip = IPAddress.Parse("127.0.0.1");
         static int _port = 7777;
         static int _messageLength = 3;
+        static int _totalCount = 0;
         static byte[][] _titleBytesArray = new byte[10][];
         static byte[][] _messageBytesArray = new byte[10][];
-        static int _totalCount = 0;
 
         static void Main(string[] args)
         {
-            //GC.AddMemoryPressure(55 * 1024 * 1024);
-
-            //var threadPoolSize = 20;
-
-            //ThreadPool.SetMaxThreads(threadPoolSize, threadPoolSize);
-            //ThreadPool.SetMinThreads(threadPoolSize, threadPoolSize);
-
             NetworkSettings.ReceiveTimeout = 10000;
             NetworkSettings.SendTimeout = 10000;
-            //NetworkSettings.LoadTest = true;
+            NetworkSettings.HighResponse = true;
             NetworkSettings.ClientDetectReceiveInterval = 1;
             NetworkSettings.ClientCacheSize = 100;
 
@@ -77,16 +68,84 @@ namespace Test.Client
             }
         }
 
+        static int[] titleTestLengthArray = new int[] { 10, 100, 600, 4000,15000 };
+        static int[] extentionTestLengthArray = new int[] { 0,10, 100, 600 ,4000,15000};
+
         private static void StartFunctionTest()
         {
+            Console.WriteLine("");
             WriteMessage(string.Format("start function test"));
             WriteMessage(string.Format("ip:{2},port:{3}", _threadCount, _messageLength, _ip, _port));
+
+            for (var i=0; i< titleTestLengthArray.Length; i++)
+            {
+                for (var j = 0; j < extentionTestLengthArray.Length; j++)
+                {
+                    RunStartFunctionTest(titleTestLengthArray[i], extentionTestLengthArray[j]).Wait();
+                }
+            }
+
+            WriteMessage("function test complete!");
+        }
+
+        private static async Task RunStartFunctionTest(int titleLength,int extentionLength)
+        {
+            var fillingChar = GetRandomMessageIndex(DateTime.Now.Second).ToString()[0];
+            var title = "".PadLeft(titleLength, fillingChar);
+            var extention = "".PadLeft(extentionLength, fillingChar);
+
+            WriteMessage(string.Format("run new function test"));
+            WriteMessage(string.Format("query title length:{0},query extention length:{1},fillingChar:'{2}'", title.Length, extention.Length, fillingChar));
+
+            int testCount = 0;
+            int percentage = 0;
+
+            var titleBytes = Encoding.UTF8.GetBytes(title);
+            var extentionBytes = Encoding.UTF8.GetBytes(extention);
+
+            int maxTestLength = 20000;
+
+            for (var i = 0; i < maxTestLength; i++)
+            {
+                using (var rpcClient = CreateClient(_ip, _port))
+                {
+                    var sendMessage = "".PadLeft(i, fillingChar);
+                    var messageBytes = Encoding.UTF8.GetBytes(sendMessage);
+                   
+                    var syncReceive = rpcClient.Query(titleBytes, messageBytes, extentionBytes);
+
+                    if (Encoding.UTF8.GetString(syncReceive.ContentBytes) != sendMessage)
+                        throw new Exception();
+
+                    if (Encoding.UTF8.GetString(syncReceive.HeaderExtentionBytes) != extention)
+                        throw new Exception();
+
+                    var asyncReceive = await rpcClient.QueryAsync(titleBytes, messageBytes, extentionBytes);
+
+                    if (Encoding.UTF8.GetString(asyncReceive.ContentBytes) != sendMessage)
+                        throw new Exception();
+
+                    if (Encoding.UTF8.GetString(asyncReceive.HeaderExtentionBytes) != extention)
+                        throw new Exception();
+                }
+
+                testCount++;
+
+                if (testCount * 10 / maxTestLength != percentage)
+                {
+                    percentage = testCount * 10 / maxTestLength;
+                    WriteMessage(percentage + "0%");
+                }
+            }
         }
 
         private static void StartLoadTest()
         {
+            Console.WriteLine("");
             WriteMessage(string.Format("start load test"));
-            WriteMessage(string.Format("thread count:{0},message_length:{1},ip:{2},port:{3}", _threadCount, _messageLength, _ip, _port));
+            WriteMessage(string.Format("thread count:{0},", _threadCount));
+            WriteMessage(string.Format("message length:{0}",  _messageLength));
+            WriteMessage(string.Format("ip:{0},port:{1}", _ip, _port));
 
             StartMonite();
 
@@ -94,12 +153,13 @@ namespace Test.Client
 
             for (var i = 0; i < _threadCount; i++)
             {
-                var thread = new Thread(() => {
+                Task.Factory.StartNew(async () =>
+                {
                     for (var j = 0; j < _loopCount; j++)
                     {
                         try
                         {
-                            Run(_ip, _port, 20);
+                            await RunLoadTest(_ip, _port, 50);
                         }
                         catch (Exception ex)
                         {
@@ -107,24 +167,18 @@ namespace Test.Client
                             Thread.Sleep(1000);
                         }
                     }
-                });
-                thread.IsBackground = true;
-                thread.Priority = ThreadPriority.Highest;
-                thread.Start();
+                }, TaskCreationOptions.LongRunning);
             }
         }
 
-        private static int GetRandomMessageIndex()
+        private static int GetRandomMessageIndex(int seed)
         {
-            return DateTime.Now.Second % 10;
+            return seed % 10;
         }
 
         private static IClient CreateClient(IPAddress ip, int port)
         {
-            //if(TestConfig.ConnectionType == 0)
             return new FastRpcClient(ip, port);
-            //else
-            //    return new SimpleRpcClient(ip, port);
         }
 
         private static void GenerateMessage()
@@ -140,13 +194,12 @@ namespace Test.Client
         private static void StartMonite()
         {
             Task.Factory.StartNew(() => {
-
                 var intervalSecond = 2;
 
                 while (true)
                 {
-                    var processCount = Interlocked.Exchange(ref RpcServerDebuger.ProcessCount, 0);
-                    var processTime = Interlocked.Exchange(ref RpcServerDebuger.ProcessTime, 0);
+                    var processCount = Interlocked.Exchange(ref RpcDebugger.ProcessCount, 0);
+                    var processTime = Interlocked.Exchange(ref RpcDebugger.ProcessTime, 0);
 
                     _totalCount += processCount;
 
@@ -155,15 +208,16 @@ namespace Test.Client
                     if (processCount == 0)
                         processCount = 1;
 
-                    WriteMessage(string.Format("[total:{0}][rps:{1}][process time:{2}ms]",_totalCount, processCount, (processTime*1.0d/ processCount).ToString("f3")));
+                    var pt = processTime * 1.0d / processCount;
+
+                    WriteMessage(string.Format("[thread_count:{0}][rps:{1}][process time:{2}ms]", _threadCount, processCount, pt.ToString("f3")));
 
                     Thread.Sleep(intervalSecond * 1000);
                 }
             }, TaskCreationOptions.LongRunning);
         }
        
-
-        private static void Run(IPAddress ip, int port, int loopCount = 20)
+        private static async Task RunLoadTest(IPAddress ip, int port, int loopCount = 20)
         {
             var startTime = DateTime.Now;
 
@@ -171,22 +225,16 @@ namespace Test.Client
             {
                 for (var i = 0; i < loopCount; i++)
                 {
-                    var index = 0;//GetRandomMessageIndex();
+                    var index = GetRandomMessageIndex(startTime.Second);
 
                     var receive = rpcClient.Query(_titleBytesArray[index], _messageBytesArray[index]);
-
-                    //var task = rpcClient.QueryAsync(_lastTitleBytes, _lastMessageBytes);
-                    //task.Wait();
-
-                    //var receiveMessage = Encoding.UTF8.GetString(receive.ContentBytes);
-                    //if (receiveMessage != _sendMessage)
-                    //    throw new Exception("消息错误");
+                    //var receive = await rpcClient.QueryAsync(_titleBytesArray[index], _messageBytesArray[index]);
                 }
             }
 
             var time = (int)(DateTime.Now - startTime).TotalMilliseconds;
-            Interlocked.Add(ref RpcServerDebuger.ProcessTime, time);
-            Interlocked.Add(ref RpcServerDebuger.ProcessCount, loopCount);
+            Interlocked.Add(ref RpcDebugger.ProcessTime, time);
+            Interlocked.Add(ref RpcDebugger.ProcessCount, loopCount);
         }
 
         private static void WriteMessage(string message)
@@ -195,18 +243,14 @@ namespace Test.Client
         }
     }
 
-    public class RpcServerDebuger
+    public class RpcDebugger
     {
-        //public static volatile int connectCount;
-        //public static RpcServer RpcServer { get; set; }
-
         public static volatile int ProcessCount;
 
         public static long ProcessTime;
 
         public static void Clear()
         {
-            //connectCount = 0;
             ProcessCount = 0;
             ProcessTime = 0;
         }

@@ -75,42 +75,9 @@ namespace Test.Server
     {
         public Task<ResponseBase> Process(Socean.Rpc.Core.Message.FrameData frameData)
         {
-            if (response == null)
-                response = (new CustomResponse(Encoding.UTF8.GetBytes("111"), frameData.ContentBytes, (byte)ResponseCode.OK));
+            ResponseBase response = (new CustomResponse(frameData.HeaderExtentionBytes, frameData.ContentBytes, (byte)ResponseCode.OK));
 
             return Task.FromResult(response);
-
-            //return response;
         }
-
-        ResponseBase response;
-
-        //public ResponseBase Process(Socean.Rpc.Core.Message.FrameData frameData)
-        //{
-        //    if (response == null)
-        //        response = (new CustomResponse(Encoding.UTF8.GetBytes("111"), frameData.ContentBytes, (byte)ResponseCode.OK));
-
-        //    return response;
-
-        //    //var title = Encoding.UTF8.GetString(frameData.TitleBytes);
-
-        //    //Interlocked.Increment(ref RpcServerDebuger.ProcessCount);
-
-
-        //    //if (title == "aa")
-        //    //{
-        //    //    var c = Encoding.UTF8.GetString(frameData.ContentBytes);
-        //    //    return new BytesResponse(Encoding.UTF8.GetBytes(title + ":" + c));
-        //    //}
-
-        //    //if (title == "empty")
-        //    //{
-        //    //    return new BytesResponse(Encoding.UTF8.GetBytes(string.Empty));
-        //    //}
-
-        //    //return new CustomResponse(Encoding.UTF8.GetBytes("111"), frameData.ContentBytes, (byte)ResponseCode.OK);
-
-        //    //return new BytesResponse(frameData.ContentBytes);
-        //}
     }
 }

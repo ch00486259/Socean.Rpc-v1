@@ -12,7 +12,7 @@ namespace Test.Client
     class Program
     {
         static int _threadCount = 1;
-        static int _loopCount = 99999999;
+        static int _loopCount = 999999999;
         static IPAddress _ip = IPAddress.Parse("127.0.0.1");
         static int _port = 7777;
         static int _messageLength = 3;
@@ -90,26 +90,25 @@ namespace Test.Client
 
         private static async Task RunStartFunctionTest(int titleLength,int extentionLength)
         {
-            var fillingChar = GetRandomMessageIndex(DateTime.Now.Second).ToString()[0];
-            var title = "".PadLeft(titleLength, fillingChar);
-            var extention = "".PadLeft(extentionLength, fillingChar);
-
             WriteMessage(string.Format("run new function test"));
-            WriteMessage(string.Format("query title length:{0},query extention length:{1},fillingChar:'{2}'", title.Length, extention.Length, fillingChar));
+            WriteMessage(string.Format("test title length:{0},test extention length:{1}", titleLength, extentionLength));
 
             int testCount = 0;
             int percentage = 0;
-
-            var titleBytes = Encoding.UTF8.GetBytes(title);
-            var extentionBytes = Encoding.UTF8.GetBytes(extention);
-
             int maxTestLength = 20000;
 
             for (var i = 0; i < maxTestLength; i++)
             {
                 using (var rpcClient = CreateClient(_ip, _port))
                 {
+                    var fillingChar = i.ToString().Last();
+
+                    var title = "".PadLeft(titleLength, fillingChar);
+                    var extention = "".PadLeft(extentionLength, fillingChar);
                     var sendMessage = "".PadLeft(i, fillingChar);
+
+                    var titleBytes = Encoding.UTF8.GetBytes(title);
+                    var extentionBytes = Encoding.UTF8.GetBytes(extention);
                     var messageBytes = Encoding.UTF8.GetBytes(sendMessage);
                    
                     var syncReceive = rpcClient.Query(titleBytes, messageBytes, extentionBytes);

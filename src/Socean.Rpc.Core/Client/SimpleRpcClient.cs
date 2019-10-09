@@ -26,7 +26,7 @@ namespace Socean.Rpc.Core.Client
             _transport = new TcpTransport(this, ServerIP, ServerPort);
             _syncQueryContext = new SyncQueryContext();
             _asyncQueryContext = new AsyncQueryContext();
-            if (NetworkSettings.LoadTest)
+            if (NetworkSettings.HighResponse)
                 _asyncQueryContext = new HighResponseQueryContextFacade(_asyncQueryContext);
         }
 

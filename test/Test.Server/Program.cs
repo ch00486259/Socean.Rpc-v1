@@ -23,7 +23,7 @@ namespace Test.Server
             ThreadPool.SetMaxThreads(threadPoolSize, threadPoolSize);
             ThreadPool.SetMinThreads(threadPoolSize, threadPoolSize);
 
-            WriteMessage(string.Format("thread pool count:{0}", threadPoolSize));
+            WriteMessage(string.Format("thread pool size:{0}", threadPoolSize));
 
             LogAgent.LogAction = (level, message, ex) =>
             {

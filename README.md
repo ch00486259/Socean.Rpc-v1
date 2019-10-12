@@ -46,7 +46,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
                   return new EmptyResponse();
               }
 
-              return new ErrorResponse(ResponseCode.SERVICE_NOT_FOUND);
+              return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
           }
       }
 

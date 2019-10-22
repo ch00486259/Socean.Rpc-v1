@@ -48,9 +48,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="E:\GitHub\Socean.Rpc\src\Socean.Rpc.Core\Socean.Rpc.Core.csproj">
-      <Project>{4ee89cb4-00e3-4b07-8c89-01729fdb31a2}</Project>
-      <Name>Socean.Rpc.Core</Name>
+    <ProjectReference Include="..\..\src\Socean.Rpc\Socean.Rpc.csproj">
+      <Project>{6418454b-6225-4b50-86c2-742feb840cde}</Project>
+      <Name>Socean.Rpc</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

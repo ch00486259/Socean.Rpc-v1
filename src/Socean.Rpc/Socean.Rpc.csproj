@@ -36,15 +36,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Client\IClientFactory.cs" />
     <Compile Include="Core\Client\QueryContext.cs" />
     <Compile Include="Core\Client\IClient.cs" />
-    <Compile Include="Core\Client\SimpleRpcClientFactory.cs" />
+    <Compile Include="Core\Client\SimpleRpcClientPoolRoot.cs" />
     <Compile Include="Core\Client\FastRpcClient.cs" />
     <Compile Include="Core\Server\IServer.cs" />
     <Compile Include="Core\TcpTransportHostBase.cs" />

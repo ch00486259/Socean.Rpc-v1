@@ -18,7 +18,7 @@ namespace Socean.Rpc.Core.Client
             ServerIP = ip;
             ServerPort = port;
 
-            _client = (SimpleRpcClient)SimpleRpcClientFactory.Create(ip, port);
+            _client = (SimpleRpcClient)SimpleRpcClientPoolRoot.GetItem(ip, port);
         }
 
         public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
@@ -46,7 +46,7 @@ namespace Socean.Rpc.Core.Client
             if (oldValue == null)
                 return;
 
-            SimpleRpcClientFactory.TakeBack(oldValue);
+            SimpleRpcClientPoolRoot.ReturnItem(oldValue);
         }
 
         public void Dispose()

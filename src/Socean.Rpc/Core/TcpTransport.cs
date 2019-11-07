@@ -59,6 +59,8 @@ namespace Socean.Rpc.Core
 
                 //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, 4000);
                 //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 4000);
+                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+                //_socket.LingerState = new System.Net.Sockets.LingerOption(true, 1);
 
                 _socket.Connect(RemoteIP, RemotePort);
             }
@@ -66,9 +68,6 @@ namespace Socean.Rpc.Core
             {
                 _socket = socket;
                 _socket.NoDelay = true;
-
-                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, 4000);
-                //_socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 4000);
             }
 
             BeginNewReceive(true);
@@ -139,7 +138,7 @@ namespace Socean.Rpc.Core
             if (tcpTransport._state != 1)
                 return;
 
-            int readCount = 0;
+            int readCount = -1;
             try
             {
                 readCount = tcpTransport._socket.EndReceive(ar);
@@ -149,9 +148,16 @@ namespace Socean.Rpc.Core
                 LogAgent.Error("tcpTransport ReceiveCallback,socket EndReceive error", ex);
             }
 
-            if (readCount <= 0)
+            if (readCount == -1)
             {
                 tcpTransport.Close();
+                return;
+            }
+
+            if (readCount == 0)
+            {
+                LogAgent.Info("tcpTransport ReceiveCallback,socket receive size:0,remote socket is closed");
+                tcpTransport.Close(true);
                 return;
             }
 
@@ -189,7 +195,6 @@ namespace Socean.Rpc.Core
                 LogAgent.Error("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
                 return;
             }
-
         }
 
         public void SendAsync(byte[] sendBuffer, int messageByteCount)
@@ -231,7 +236,7 @@ namespace Socean.Rpc.Core
             _transportHost.OnReceiveMessage(this, messageData);
         }
 
-        public void Close()
+        public void Close(bool onlyCloseSocket = false)
         {
             if (_state == -1)
                 return;
@@ -242,7 +247,8 @@ namespace Socean.Rpc.Core
 
             try
             {
-                _socket.Shutdown(SocketShutdown.Both);
+                if (onlyCloseSocket == false)
+                    _socket.Shutdown(SocketShutdown.Both);
             }
             catch
             {
@@ -318,6 +324,6 @@ namespace Socean.Rpc.Core
 
         void SendAsync(byte[] sendBuffer, int messageByteCount);
 
-        void Close();
+        void Close(bool onlyCloseSocket);
     }
 }

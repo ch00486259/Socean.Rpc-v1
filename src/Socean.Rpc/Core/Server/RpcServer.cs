@@ -73,6 +73,8 @@ namespace Socean.Rpc.Core.Server
                 _server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _server.ExclusiveAddressUse = true;
                 _server.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
+                _server.LingerState = new System.Net.Sockets.LingerOption(true, 0);
+
                 _server.Bind(new IPEndPoint(ServerIP, ServerPort));
                 _server.Listen(backlog);
             }

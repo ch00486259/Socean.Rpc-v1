@@ -18,7 +18,7 @@ namespace Socean.Rpc.Core.Server
 
         public IPAddress ServerIP { get; private set; }
         public int ServerPort { get; private set; }
-        public IMessageProcessor MessageProcessor { get; set; }
+        private IMessageProcessor _messageProcessor;
         private ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>();
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Socean.Rpc.Core.Server
             return 0;
         }
 
-        public void Start()
+        public void Start<T>() where T: IMessageProcessor, new()
         {
             if (_serverState != 0)
                 throw new Exception();
@@ -64,6 +64,9 @@ namespace Socean.Rpc.Core.Server
                 _serverState = -1;
                 return;
             }
+
+            _messageProcessor = (T)Activator.CreateInstance(typeof(T));
+            _messageProcessor.Init();
 
             try
             {
@@ -178,7 +181,7 @@ namespace Socean.Rpc.Core.Server
 
         internal override void OnReceiveMessage(TcpTransport serverTransport, FrameData frameData)
         {
-            ProcessReceive(serverTransport, frameData, MessageProcessor);
+            ProcessReceive(serverTransport, frameData, _messageProcessor);
         }
 
         private static async void ProcessReceive(TcpTransport serverTransport, FrameData frameData,

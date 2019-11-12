@@ -4,10 +4,8 @@ namespace Socean.Rpc.Core.Server
 {
     public interface IServer: IDisposable
     {
-        void Start();
+        void Start<T>() where T: IMessageProcessor, new();
 
         void Close();
-
-        IMessageProcessor MessageProcessor { get; set; }
     }
 }

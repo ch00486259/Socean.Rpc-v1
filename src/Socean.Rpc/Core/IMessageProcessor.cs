@@ -5,6 +5,8 @@ namespace Socean.Rpc.Core
 {
     public interface IMessageProcessor
     {
+        void Init();
+
         Task<ResponseBase> Process(FrameData frameData);
     }
 }

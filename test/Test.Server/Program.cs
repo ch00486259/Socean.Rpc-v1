@@ -40,13 +40,12 @@ namespace Test.Server
 
             _rpcServer = new RpcServer();
             _rpcServer.Bind(IPAddress.Any, port);
-            _rpcServer.MessageProcessor = new CustomMessageProcessor();
 
             Task.Factory.StartNew(() =>
             {
                 try
                 {
-                    _rpcServer.Start();
+                    _rpcServer.Start<CustomMessageProcessor>();
                     WriteMessage(string.Format("server started,port:{0}", port)) ;
                 }
                 catch (Exception ex)
@@ -73,6 +72,11 @@ namespace Test.Server
 
     public class CustomMessageProcessor : IMessageProcessor
     {
+        public void Init()
+        { 
+        
+        }
+
         public Task<ResponseBase> Process(Socean.Rpc.Core.Message.FrameData frameData)
         {
             ResponseBase response = (new CustomResponse(frameData.HeaderExtentionBytes, frameData.ContentBytes, (byte)ResponseCode.OK));

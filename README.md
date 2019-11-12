@@ -24,6 +24,9 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
  
      public class DefaultMessageProcessor : IMessageProcessor
      {
+          public void Init()
+          {          
+          }
 
           public async Task<ResponseBase> Process(Socean.Rpc.Core.Message.FrameData frameData)
           {
@@ -54,10 +57,9 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
   2.启动服务
   
     var server = new RpcServer();
-    server.Bind(IPAddress.Any, 11111);    
-    server.MessageProcessor = new DefaultMessageProcessor();
+    server.Bind(IPAddress.Any, 11111);       
 
-    server.Start();  
+    server.Start<DefaultMessageProcessor>();  
   
   -------------------------------------------------------------------
 

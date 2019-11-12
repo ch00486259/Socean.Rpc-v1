@@ -52,6 +52,12 @@ namespace Socean.Rpc.Core.Server
 
         public void Start<T>() where T: IMessageProcessor, new()
         {
+            if (ServerIP == null)
+                throw new ArgumentNullException("ServerIP");
+
+            if (ServerPort <= 0 || ServerPort>= 65536)
+                throw new ArgumentOutOfRangeException("ServerPort");
+
             if (_serverState != 0)
                 throw new Exception();
 

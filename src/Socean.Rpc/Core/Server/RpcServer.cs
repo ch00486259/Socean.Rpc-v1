@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Server
@@ -18,17 +17,20 @@ namespace Socean.Rpc.Core.Server
 
         public IPAddress ServerIP { get; private set; }
         public int ServerPort { get; private set; }
+
         private IMessageProcessor _messageProcessor;
         private ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>();
 
         /// <summary>
         /// description：
         /// 0  uninit
-        /// 1  running
+        /// 1  starting
+        /// 2  started
+        /// 3  closing
         /// -1 closed
         ///
         /// sequence：
-        ///    0 -> 1 -> -1
+        ///    0 -> 1 -> 2 -> 3 -> -1
         /// </summary>
         private volatile int _serverState = 0;
 
@@ -45,34 +47,23 @@ namespace Socean.Rpc.Core.Server
             get { return _serverState; }
         }
 
-        public int GetClientCount()
-        {
-            return 0;
-        }
-
         public void Start<T>() where T: IMessageProcessor, new()
         {
             if (ServerIP == null)
                 throw new ArgumentNullException("ServerIP");
 
-            if (ServerPort <= 0 || ServerPort>= 65536)
+            if (ServerPort <= 0 || ServerPort >= 65536)
                 throw new ArgumentOutOfRangeException("ServerPort");
 
-            if (_serverState != 0)
-                throw new Exception();
-
-            var oldValue = Interlocked.Exchange(ref _serverState, 1);
-            if (oldValue == 1)
-                return;
-
-            if (oldValue == -1)
-            {
-                _serverState = -1;
-                return;
-            }
+            if(_serverState != 0)
+                throw new Exception("rpcserver has started");
 
             _messageProcessor = (T)Activator.CreateInstance(typeof(T));
             _messageProcessor.Init();
+
+            var originState = Interlocked.CompareExchange(ref _serverState, 1, 0);
+            if (originState != 0)
+                throw new Exception("rpcserver has started");
 
             try
             {
@@ -93,6 +84,10 @@ namespace Socean.Rpc.Core.Server
                 throw;
             }
 
+            var originState2 = Interlocked.CompareExchange(ref _serverState, 2,1);
+            if (originState2 != 1)
+                return;
+
             try
             {
                 _server.BeginAccept(AcceptSocketCallback, _server);
@@ -106,7 +101,7 @@ namespace Socean.Rpc.Core.Server
 
         private void AcceptSocketCallback(IAsyncResult ar)
         {
-            if (_serverState != 1)
+            if (_serverState != 2)
                 return;
 
             var server = (Socket)ar.AsyncState;
@@ -266,14 +261,8 @@ namespace Socean.Rpc.Core.Server
 
         public void Close()
         {
-            if (_serverState == 0)
-                return;
-
-            if (_serverState == -1)
-                return;
-
-            var oldValue = Interlocked.Exchange(ref _serverState, -1);
-            if (oldValue == -1)
+            var originState = Interlocked.CompareExchange(ref _serverState, 3, 2);
+            if (originState != 2)
                 return;
 
             try
@@ -290,6 +279,8 @@ namespace Socean.Rpc.Core.Server
             {
                 transport.Close();
             }
+
+            _serverState = -1;
 
             LogAgent.Info("server closed");
         }

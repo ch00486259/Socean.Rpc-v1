@@ -16,16 +16,15 @@ namespace Socean.Rpc.Core
 
         public static Action<LogLevel, string, Exception> LogAction = (level, message, ex) =>
         {
-            if (level >= Level)
-                Console.WriteLine("{0} [{1}] {2} {3}", DateTime.Now, level, message, ex);
+           
         };
 
-        internal static void Warn(string message, Exception ex = null)
+        internal static void Warn(string message)
         {
             try
             {
                 var logAction = LogAction;
-                logAction?.Invoke(LogLevel.Warn, message, ex);
+                logAction?.Invoke(LogLevel.Warn, message, null);
             }
             catch 
             {
@@ -46,12 +45,12 @@ namespace Socean.Rpc.Core
             }
         }
 
-        internal static void Debug(string message, Exception ex = null)
+        internal static void Debug(string message)
         {
             try
             {
                 var logAction = LogAction;
-                logAction?.Invoke(LogLevel.Debug, message, ex);
+                logAction?.Invoke(LogLevel.Debug, message, null);
             }
             catch  
             {
@@ -59,12 +58,12 @@ namespace Socean.Rpc.Core
             }
         }
 
-        internal static void Info(string message, Exception ex = null)
+        internal static void Info(string message)
         {
             try
             {
                 var logAction = LogAction;
-                logAction?.Invoke(LogLevel.Info, message, ex);
+                logAction?.Invoke(LogLevel.Info, message, null);
             }
             catch 
             {

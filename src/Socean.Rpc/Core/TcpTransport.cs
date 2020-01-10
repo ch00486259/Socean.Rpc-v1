@@ -157,7 +157,7 @@ namespace Socean.Rpc.Core
             if (readCount == 0)
             {
                 LogAgent.Info("tcpTransport ReceiveCallback,socket receive size:0,remote socket is closed");
-                tcpTransport.Close(true);
+                tcpTransport.Close(false);
                 return;
             }
 
@@ -236,7 +236,7 @@ namespace Socean.Rpc.Core
             _transportHost.OnReceiveMessage(this, messageData);
         }
 
-        public void Close(bool onlyCloseSocket = false)
+        public void Close(bool shutDownSocket = true)
         {
             if (_state == -1)
                 return;
@@ -247,7 +247,7 @@ namespace Socean.Rpc.Core
 
             try
             {
-                if (onlyCloseSocket == false)
+                if (shutDownSocket)
                     _socket.Shutdown(SocketShutdown.Both);
             }
             catch

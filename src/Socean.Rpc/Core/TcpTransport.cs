@@ -96,7 +96,7 @@ namespace Socean.Rpc.Core
             }
             catch(Exception ex)
             {
-                LogAgent.Error("tcpTransport BeginNewReceive,socket BeginReceive error", ex);
+                LogAgent.Warn("tcpTransport BeginNewReceive,socket BeginReceive error", ex);
                 Close();
                 throw;
             }
@@ -119,7 +119,7 @@ namespace Socean.Rpc.Core
             }
             catch(Exception ex)
             {
-                LogAgent.Error("tcpTransport SendCallback,socket EndSend error", ex);                 
+                LogAgent.Warn("tcpTransport SendCallback,socket EndSend error", ex);                 
             }
 
             if (sendCount <= 0)
@@ -145,7 +145,7 @@ namespace Socean.Rpc.Core
             }
             catch(Exception ex)
             {
-                LogAgent.Error("tcpTransport ReceiveCallback,socket EndReceive error", ex);
+                LogAgent.Warn("tcpTransport ReceiveCallback,socket EndReceive error", ex);
             }
 
             if (readCount == -1)
@@ -178,7 +178,7 @@ namespace Socean.Rpc.Core
             catch(Exception ex)
             {
                 tcpTransport.Close();
-                LogAgent.Error("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
+                LogAgent.Warn("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
                 return;
             }
 
@@ -192,7 +192,7 @@ namespace Socean.Rpc.Core
             catch (Exception ex)
             {
                 tcpTransport.Close();
-                LogAgent.Error("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
+                LogAgent.Warn("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
                 return;
             }
         }
@@ -209,7 +209,7 @@ namespace Socean.Rpc.Core
             catch(Exception ex)
             {
                 Close();
-                LogAgent.Error("tcpTransport SendAsync,socket BeginSend error", ex);
+                LogAgent.Warn("tcpTransport SendAsync,socket BeginSend error", ex);
                 throw;
             }
         }
@@ -226,7 +226,7 @@ namespace Socean.Rpc.Core
             catch (Exception ex)
             {
                 Close();
-                LogAgent.Error("tcpTransport Send,socket Send error", ex);
+                LogAgent.Warn("tcpTransport Send,socket Send error", ex);
                 throw;
             }
         }

@@ -19,12 +19,12 @@ namespace Socean.Rpc.Core
            
         };
 
-        internal static void Warn(string message)
+        internal static void Warn(string message, Exception ex = null)
         {
             try
             {
                 var logAction = LogAction;
-                logAction?.Invoke(LogLevel.Warn, message, null);
+                logAction?.Invoke(LogLevel.Warn, message, ex);
             }
             catch 
             {

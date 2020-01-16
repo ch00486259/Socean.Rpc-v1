@@ -116,7 +116,7 @@ namespace Socean.Rpc.Core.Server
             }
             catch(Exception ex)
             {
-                LogAgent.Error(ex.Message);
+                LogAgent.Warn(ex.Message);
             }
 
             try
@@ -136,8 +136,7 @@ namespace Socean.Rpc.Core.Server
 
                 }
 
-                LogAgent.Error(ex.Message);
-
+                LogAgent.Warn(ex.Message);
                 return;
             }
 
@@ -173,7 +172,7 @@ namespace Socean.Rpc.Core.Server
 
                 }
 
-                LogAgent.Error(ex.Message);
+                LogAgent.Warn(ex.Message);
                 return;
             }
 

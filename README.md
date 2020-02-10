@@ -106,7 +106,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
     
    3.生成代理服务
    
-     var bookServiceProxy = EasyProxyGenerator<IBookService>.Create(IPAddress.Parse("127.0.0.1"), 11111, rpcSerialize);
+     var bookServiceProxy = EasyProxyGenerator<IBookService>.Create(IPAddress.Parse("127.0.0.1"), 11111, new RpcSeralizer();
    
    4.执行函数
    

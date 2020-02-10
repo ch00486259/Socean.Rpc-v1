@@ -51,23 +51,23 @@ namespace Socean.Rpc.DynamicProxy
 
                 try
                 {
+                    var service = ObjectFactory.CreateInstance(serviceType);
+
                     var serviceName = serviceAttribute.ServiceName;
                     if (string.IsNullOrEmpty(serviceName))
                         serviceName = serviceType.Name;
 
-                    var service = ObjectFactory.CreateInstance(serviceType);
-
                     var methodInfoArray = serviceType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                     foreach (var methodInfo in methodInfoArray)
                     {
-                        var actionAttribute = (RpcServiceActionAttribute)methodInfo.GetCustomAttributes(typeof(RpcServiceActionAttribute), false).FirstOrDefault();                        
-                        var actionName = actionAttribute?.ActionName;                        
+                        var actionAttribute = (RpcServiceActionAttribute)methodInfo.GetCustomAttributes(typeof(RpcServiceActionAttribute), false).FirstOrDefault();
+                        var actionName = actionAttribute?.ActionName;
                         if (string.IsNullOrEmpty(actionName))
                         {
                             actionName = methodInfo.Name;
                         }
 
-                        RegisterService(serviceName, actionName, service, methodInfo, rpcSerializer);
+                        RegisterService(serviceName, actionName, service, serviceType, methodInfo, rpcSerializer);
                     }
                 }
                 catch (Exception ex)
@@ -77,7 +77,7 @@ namespace Socean.Rpc.DynamicProxy
             }
         }
 
-        private void RegisterService(string serviceName, string actionName, object target, MethodInfo methodInfo, IRpcSerializer rpcSerializer)
+        private void RegisterService(string serviceName, string actionName, object service, Type serviceType, MethodInfo methodInfo, IRpcSerializer rpcSerializer)
         {
             var typeArray = DynamicProxyHelper.GetParameterTypes(methodInfo.GetParameters());
             if (typeArray.Length > 10)
@@ -86,7 +86,7 @@ namespace Socean.Rpc.DynamicProxy
             var parameterTupleType = CustomTuple.CreateType(typeArray);
             var title = DynamicProxyHelper.FormatTitle(serviceName, actionName, typeArray, methodInfo.ReturnType);
 
-            var invocation = new Invocation(title, target, methodInfo, parameterTupleType, rpcSerializer);
+            var invocation = new Invocation(title, serviceType, methodInfo, parameterTupleType, rpcSerializer);
             _invocationDictionary.TryAdd(invocation.Key, invocation);
 
             LogAgent.Info(string.Format("RegisterService -> {0}", title));

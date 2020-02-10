@@ -39,7 +39,8 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
         }
     }
     
-    2.定义服务
+ 2.定义服务
+ 
     public class Book
     {
         public string Name { get; set; }
@@ -62,7 +63,8 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
         }
     }
     
-    3.启动服务
+ 3.启动服务
+ 
     var server = new RpcServer();
     server.Bind(IPAddress.Parse("127.0.0.1"), 11111);
     server.Start<CustomMessageProcessor>();

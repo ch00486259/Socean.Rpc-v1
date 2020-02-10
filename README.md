@@ -18,7 +18,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
   
   1.定义序列化器和消息处理器
     
-    public class RpcSeralizer : Socean.Rpc.DynamicProxy.IRpcSerializer
+    public class RpcSerializer : Socean.Rpc.DynamicProxy.IRpcSerializer
     {
         public object Deserialize(string content, Type type)
         {
@@ -35,7 +35,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
     {
         public override void Init()
         {
-            RegisterServices(Assembly.GetExecutingAssembly(), new RpcSeralizer());
+            RegisterServices(Assembly.GetExecutingAssembly(), new RpcSerializer());
         }
     }
     
@@ -74,7 +74,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
  
   1.定义序列化器
   
-    public class RpcSeralizer : Socean.Rpc.DynamicProxy.IRpcSerializer
+    public class RpcSerializer : Socean.Rpc.DynamicProxy.IRpcSerializer
     {
         public object Deserialize(string content, Type type)
         {
@@ -106,7 +106,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
     
    3.生成代理服务
    
-     var bookServiceProxy = EasyProxyGenerator<IBookService>.Create(IPAddress.Parse("127.0.0.1"), 11111, new RpcSeralizer();
+     var bookServiceProxy = EasyProxyGenerator<IBookService>.Create(IPAddress.Parse("127.0.0.1"), 11111, new RpcSerializer();
    
    4.执行函数
    

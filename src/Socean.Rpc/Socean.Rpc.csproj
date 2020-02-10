@@ -56,6 +56,22 @@
     <Compile Include="Core\NetworkSettings.cs" />
     <Compile Include="Core\IMessageProcessor.cs" />
     <Compile Include="Core\Server\RpcServer.cs" />
+    <Compile Include="DynamicProxy\CustomTuple.cs" />
+    <Compile Include="DynamicProxy\EasyProxyInterceptor.cs" />
+    <Compile Include="DynamicProxy\EasyProxyMessageProcessor.cs" />
+    <Compile Include="DynamicProxy\DynamicProxyHelper.cs" />
+    <Compile Include="DynamicProxy\IInterceptor.cs" />
+    <Compile Include="DynamicProxy\Invocation.cs" />
+    <Compile Include="DynamicProxy\ObjectFactory.cs" />
+    <Compile Include="DynamicProxy\ProxyBase.cs" />
+    <Compile Include="DynamicProxy\RpcServiceAttribute.cs" />
+    <Compile Include="DynamicProxy\EasyProxyGenerator.cs" />
+    <Compile Include="DynamicProxy\DynamicProxySettings.cs" />
+    <Compile Include="DynamicProxy\FastRpcClientExtention.cs" />
+    <Compile Include="DynamicProxy\FrameDataExtention.cs" />
+    <Compile Include="DynamicProxy\IRpcSerializer.cs" />
+    <Compile Include="DynamicProxy\ResponseExtention.cs" />
+    <Compile Include="DynamicProxy\SimpleRpcClientExtention.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\TcpTransport.cs" />
   </ItemGroup>

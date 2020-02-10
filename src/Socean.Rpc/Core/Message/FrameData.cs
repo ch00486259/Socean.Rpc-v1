@@ -1,6 +1,6 @@
 ﻿namespace Socean.Rpc.Core.Message
 {
-    public class FrameData
+    public partial class FrameData
     {
         public FrameData(byte[] headerExtentionBytes, byte[] titleBytes, byte[] contentBytes, byte stateCode, int messageId)
         {

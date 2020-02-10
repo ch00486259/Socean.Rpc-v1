@@ -6,7 +6,7 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    public sealed class FastRpcClient: IClient
+    public sealed partial class FastRpcClient: IClient
     {
         public IPAddress ServerIP { get; }
         public int ServerPort { get; }

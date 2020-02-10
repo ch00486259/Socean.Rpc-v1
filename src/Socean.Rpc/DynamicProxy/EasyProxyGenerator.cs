@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -22,7 +23,7 @@ namespace Socean.Rpc.DynamicProxy
             InterfaceType = typeof(T);
         }
 
-        public static T Create(string ip, int port, IRpcSerializer rpcSerializer,string extention = null)
+        public static T Create(IPAddress ip, int port, IRpcSerializer rpcSerializer,string extention = null)
         {
             if (ProxyType == null)
             {

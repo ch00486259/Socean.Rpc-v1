@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Net;
 
 namespace Socean.Rpc.DynamicProxy
 {
     public abstract class ProxyBase
     {
-        public string __IP;
+        public IPAddress __IP;
         public int __Port;
         public Type __InterfaceType;
         public string __Extention;

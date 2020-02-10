@@ -11,7 +11,7 @@ namespace Socean.Rpc.DynamicProxy
             var customTuple = (ICustomTuple)ObjectFactory.CreateInstance(parameterTupleType);
             customTuple.Fill(parameterArray);
 
-            using (var fastRpcClient = new FastRpcClient(IPAddress.Parse(proxyTarget.__IP), proxyTarget.__Port))
+            using (var fastRpcClient = new FastRpcClient(proxyTarget.__IP, proxyTarget.__Port))
             {
                 return fastRpcClient.QueryInternal(title, customTuple, returnType, proxyTarget.__RpcSerializer, throwIfErrorResponseCode: true,extention: proxyTarget.__Extention);
             }

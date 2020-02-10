@@ -143,21 +143,13 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
               var title = Encoding.UTF8.GetString(frameData.TitleBytes);
               if (title == "/books/namechange")
               {
-                  var content = Encoding.UTF8.GetString(frameData.ContentBytes);
-
-                  //here we use newtonsoft.Json serializer 
-                  //you need add refer "newtonsoft.Json.dll"
-                  var book = JsonConvert.DeserializeObject<Book>(content);
+                  var content = Encoding.UTF8.GetString(frameData.ContentBytes);                 
+                  var book = Newtonsoft.Json.JsonConvert.DeserializeObject<Book>(content);
                   book.Name = "new name";
 
-                  var responseContent = JsonConvert.SerializeObject(book);
+                  var responseContent = Newtonsoft.Json.JsonConvert.SerializeObject(book);
                   return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
-              }
-
-              if (title == "test return empty")
-              {
-                  return new EmptyResponse();
-              }
+              }           
 
               return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
           }

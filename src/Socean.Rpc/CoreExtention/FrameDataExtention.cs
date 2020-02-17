@@ -9,7 +9,7 @@ namespace Socean.Rpc.Core.Message
             if (ContentBytes == null)
                 return null;
 
-            return DynamicProxySettings.DefaultEncoding.GetString(ContentBytes);
+            return RpcExtentionSettings.DefaultEncoding.GetString(ContentBytes);
         }
 
         public string ReadTitleString()
@@ -17,7 +17,7 @@ namespace Socean.Rpc.Core.Message
             if (TitleBytes == null)
                 return null;
 
-            return DynamicProxySettings.DefaultEncoding.GetString(TitleBytes);
+            return RpcExtentionSettings.DefaultEncoding.GetString(TitleBytes);
         }
     }
 }

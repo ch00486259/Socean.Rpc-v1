@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Text;
 
-namespace Socean.Rpc.DynamicProxy
+namespace Socean.Rpc.Core
 {
-    internal static class DynamicProxySettings
+    internal static class RpcExtentionSettings
     {
         internal static Encoding DefaultEncoding { get; } = Encoding.UTF8;
     }

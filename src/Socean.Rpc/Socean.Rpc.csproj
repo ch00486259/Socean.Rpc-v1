@@ -38,10 +38,12 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\Client\HighResponseQueryContextFacade.cs" />
     <Compile Include="Core\Client\QueryContext.cs" />
     <Compile Include="Core\Client\IClient.cs" />
-    <Compile Include="Core\Client\SimpleRpcClientPoolRoot.cs" />
-    <Compile Include="Core\Client\FastRpcClient.cs" />
+    <Compile Include="CoreExtention\SimpleRpcClientPoolRoot.cs" />
+    <Compile Include="CoreExtention\FastRpcClient.cs" />
+    <Compile Include="Core\Client\ResetEvent.cs" />
     <Compile Include="Core\Server\IServer.cs" />
     <Compile Include="Core\TcpTransportHostBase.cs" />
     <Compile Include="Core\LogAgent.cs" />
@@ -66,12 +68,11 @@
     <Compile Include="DynamicProxy\ProxyBase.cs" />
     <Compile Include="DynamicProxy\RpcServiceAttribute.cs" />
     <Compile Include="DynamicProxy\EasyProxyGenerator.cs" />
-    <Compile Include="DynamicProxy\DynamicProxySettings.cs" />
-    <Compile Include="DynamicProxy\FastRpcClientExtention.cs" />
-    <Compile Include="DynamicProxy\FrameDataExtention.cs" />
+    <Compile Include="CoreExtention\RpcExtentionSettings.cs" />
+    <Compile Include="CoreExtention\FastRpcClientExtention.cs" />
+    <Compile Include="CoreExtention\FrameDataExtention.cs" />
     <Compile Include="DynamicProxy\IRpcSerializer.cs" />
-    <Compile Include="DynamicProxy\ResponseExtention.cs" />
-    <Compile Include="DynamicProxy\SimpleRpcClientExtention.cs" />
+    <Compile Include="CoreExtention\ResponseExtention.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\TcpTransport.cs" />
   </ItemGroup>

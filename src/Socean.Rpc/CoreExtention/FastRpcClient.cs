@@ -46,14 +46,23 @@ namespace Socean.Rpc.Core.Client
             if (oldValue == null)
                 return;
 
-            SimpleRpcClientPoolRoot.ReturnItem(oldValue);
+            var cacheResult = SimpleRpcClientPoolRoot.ReturnItem(oldValue);
+            if (cacheResult == false)
+            {
+                try
+                {
+                    oldValue.Dispose();
+                }
+                catch
+                {
+                    LogAgent.Error("SimpleRpcCLient Dispose error");
+                }
+            }
         }
 
         public void Dispose()
         {
             Close();
         }
-    }
-
-   
+    }   
 }

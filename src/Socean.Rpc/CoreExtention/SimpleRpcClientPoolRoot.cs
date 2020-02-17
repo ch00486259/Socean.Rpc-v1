@@ -72,18 +72,7 @@ namespace Socean.Rpc.Core.Client
             {
                 _clientList.Add(obj);
                 return true;
-            }
-            
-            try
-            {
-                var disposableObject = obj as IDisposable;
-                if (disposableObject != null)
-                    disposableObject.Dispose();
-            }
-            catch
-            {
-                LogAgent.Error("ObjectPool Return failed,disposableObject Dispose error");
-            }
+            }                      
 
             return false;
         }
@@ -91,7 +80,7 @@ namespace Socean.Rpc.Core.Client
 
     public sealed class SimpleRpcClientPoolRoot
     {
-        private static readonly ConcurrentDictionary<string, SimpleRpcClientPool> _factoryDictionary = new ConcurrentDictionary<string, SimpleRpcClientPool>();
+        private static readonly ConcurrentDictionary<string, SimpleRpcClientPool> _poolDictionary = new ConcurrentDictionary<string, SimpleRpcClientPool>();
 
         public static IClient GetItem(IPAddress ip, int port)
         {
@@ -111,13 +100,13 @@ namespace Socean.Rpc.Core.Client
 
             SimpleRpcClientPool pool = null;
 
-            _factoryDictionary.TryGetValue(key, out pool);
+            _poolDictionary.TryGetValue(key, out pool);
             if (pool != null)
                 return pool;
 
-            _factoryDictionary.TryAdd(key, new SimpleRpcClientPool(new SimpleRpcClientPolicy(ip, port)));
+            _poolDictionary.TryAdd(key, new SimpleRpcClientPool(new SimpleRpcClientPolicy(ip, port)));
 
-            _factoryDictionary.TryGetValue(key, out pool);
+            _poolDictionary.TryGetValue(key, out pool);
             if (pool != null)
                 return pool;
 

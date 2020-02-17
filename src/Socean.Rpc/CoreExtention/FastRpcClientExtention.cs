@@ -14,7 +14,7 @@ namespace Socean.Rpc.Core.Client
             if (customTuple == null)
                 throw new ArgumentNullException(nameof(customTuple));
 
-            var encoding = DynamicProxySettings.DefaultEncoding;
+            var encoding = RpcExtentionSettings.DefaultEncoding;
 
             var response = Query(
                 encoding.GetBytes(title),
@@ -34,7 +34,7 @@ namespace Socean.Rpc.Core.Client
 
         public string QueryString(string title, string content = null, string extention = null, bool throwIfErrorResponseCode = false)
         {
-            var encoding = DynamicProxySettings.DefaultEncoding;
+            var encoding = RpcExtentionSettings.DefaultEncoding;
 
             var frameData = Query(
                 encoding.GetBytes(title),
@@ -47,7 +47,7 @@ namespace Socean.Rpc.Core.Client
 
         public byte[] QueryBytes(string title, string content = null, string extention = null, bool throwIfErrorResponseCode = false)
         {
-            var encoding = DynamicProxySettings.DefaultEncoding;
+            var encoding = RpcExtentionSettings.DefaultEncoding;
 
             var frameData = Query(
                 encoding.GetBytes(title),

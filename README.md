@@ -33,9 +33,9 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
     
     public class CustomMessageProcessor : Socean.Rpc.DynamicProxy.EasyProxyMessageProcessor
     {
-        public override void Init()
+        public override void Init(IServiceHost serviceHost)
         {
-            RegisterServices(Assembly.GetExecutingAssembly(), new RpcSerializer());
+            serviceHost.RegisterServices(Assembly.GetExecutingAssembly(), new RpcSerializer());
         }
     }
     
@@ -114,6 +114,37 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
      bookServiceProxy.AddStock("相对论", 1000);
  
  
+ 其他用法
+    
+    想实现日志或鉴权等功能，可以使用ServiceFilter
+    
+    1.定义日志记录ServiceFilter
+    
+    public class LogFilter : IServiceFilter
+    {       
+        public void Do(ServiceContext context, FilterChain filterChain)
+        {
+            Console.WriteLine("before request");
+
+            filterChain.DoNext(context);
+
+            Console.WriteLine("after request");
+        }
+    }
+    
+    2.注册日志记录Filter
+    
+    public class CustomMessageProcessor : Socean.Rpc.DynamicProxy.EasyProxyMessageProcessor
+    {
+        public override void Init(IServiceHost serviceHost)
+        {
+            serviceHost.RegisterServices(Assembly.GetExecutingAssembly(), new RpcSerializer());
+            
+            serviceHost.RegisterFilter(new LogFilter());
+        }
+    }
+        
+        
  -------------------------------------------------------------------
   二、常规用法之底层函数
   

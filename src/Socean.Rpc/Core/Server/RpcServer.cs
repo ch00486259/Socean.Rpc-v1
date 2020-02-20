@@ -56,14 +56,14 @@ namespace Socean.Rpc.Core.Server
                 throw new ArgumentOutOfRangeException("ServerPort");
 
             if(_serverState != 0)
-                throw new Exception("rpcserver has started");
+                throw new RpcException("rpcserver has started");
 
-            _messageProcessor = (T)Activator.CreateInstance(typeof(T));
+            _messageProcessor = new T(); 
             _messageProcessor.Init();
 
             var originState = Interlocked.CompareExchange(ref _serverState, 1, 0);
             if (originState != 0)
-                throw new Exception("rpcserver has started");
+                throw new RpcException("rpcserver has started");
 
             try
             {

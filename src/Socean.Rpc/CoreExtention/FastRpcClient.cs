@@ -21,18 +21,18 @@ namespace Socean.Rpc.Core.Client
             _client = (SimpleRpcClient)SimpleRpcClientPoolRoot.GetItem(ip, port);
         }
 
-        public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
+        public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
         {
             if (_client == null)
-                throw new Exception("client has been closed");
+                throw new RpcException("client has been closed");
 
             return _client.Query(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
         }
 
-        public async Task<FrameData> QueryAsync(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = false)
+        public async Task<FrameData> QueryAsync(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
         {
             if (_client == null)
-                throw new Exception("client has been closed");
+                throw new RpcException("client has been closed");
 
             return await _client.QueryAsync(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
         }

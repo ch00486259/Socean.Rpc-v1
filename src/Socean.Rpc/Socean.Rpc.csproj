@@ -44,6 +44,7 @@
     <Compile Include="CoreExtention\SimpleRpcClientPoolRoot.cs" />
     <Compile Include="CoreExtention\FastRpcClient.cs" />
     <Compile Include="Core\Client\ResetEvent.cs" />
+    <Compile Include="Core\RpcException.cs" />
     <Compile Include="Core\Server\IServer.cs" />
     <Compile Include="Core\TcpTransportHostBase.cs" />
     <Compile Include="Core\LogAgent.cs" />
@@ -62,6 +63,9 @@
     <Compile Include="DynamicProxy\EasyProxyInterceptor.cs" />
     <Compile Include="DynamicProxy\EasyProxyMessageProcessor.cs" />
     <Compile Include="DynamicProxy\DynamicProxyHelper.cs" />
+    <Compile Include="DynamicProxy\EncryptHelper.cs" />
+    <Compile Include="DynamicProxy\FastRpcClientExtention.cs" />
+    <Compile Include="DynamicProxy\FilterChain.cs" />
     <Compile Include="DynamicProxy\IInterceptor.cs" />
     <Compile Include="DynamicProxy\Invocation.cs" />
     <Compile Include="DynamicProxy\ObjectFactory.cs" />
@@ -73,6 +77,8 @@
     <Compile Include="CoreExtention\FrameDataExtention.cs" />
     <Compile Include="DynamicProxy\IRpcSerializer.cs" />
     <Compile Include="CoreExtention\ResponseExtention.cs" />
+    <Compile Include="DynamicProxy\ServiceContext.cs" />
+    <Compile Include="DynamicProxy\ServiceHost.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\TcpTransport.cs" />
   </ItemGroup>

@@ -1,4 +1,4 @@
-﻿using Socean.Rpc.DynamicProxy;
+﻿using System;
 
 namespace Socean.Rpc.Core.Message
 {

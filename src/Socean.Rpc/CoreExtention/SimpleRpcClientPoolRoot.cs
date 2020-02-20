@@ -110,7 +110,7 @@ namespace Socean.Rpc.Core.Client
             if (pool != null)
                 return pool;
 
-            throw new Exception("SimpleRpcClientPoolProvider GetOrAddPool error");
+            throw new RpcException("SimpleRpcClientPoolProvider GetOrAddPool error");
         }
     }
 }

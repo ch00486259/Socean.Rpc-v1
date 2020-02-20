@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Socean.Rpc.Core;
+using System;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -31,7 +32,7 @@ namespace Socean.Rpc.DynamicProxy
             if (_createFunc2 != null)
                 return _createFunc2();
 
-            throw new Exception();
+            throw new RpcException();
         }
 
         public static T CreateInstance<T>()
@@ -52,7 +53,7 @@ namespace Socean.Rpc.DynamicProxy
             if (_createFunc2 != null)
                 return _createFunc2(parameterArray);
 
-            throw new Exception();
+            throw new RpcException();
         }
 
         public static Func<object[], object> CreateHandler(Type type, Type[] parameterTypeArray)

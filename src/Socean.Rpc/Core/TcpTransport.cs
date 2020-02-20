@@ -167,7 +167,7 @@ namespace Socean.Rpc.Core
             {
                 var step = receiveProcessor.CheckCurrentStep(readCount);
                 if (step == -1)
-                    throw new Exception("tcpTransport ReceiveCallback,receiveProcessor CheckCurrentStep error");
+                    throw new RpcException("tcpTransport ReceiveCallback,receiveProcessor CheckCurrentStep error");
 
                 if(step == 0)
                 {
@@ -200,7 +200,7 @@ namespace Socean.Rpc.Core
         public void SendAsync(byte[] sendBuffer, int messageByteCount)
         {
             if (_state != 1)
-                throw new Exception("tcpTransport SendAsync,state error");
+                throw new RpcException("tcpTransport SendAsync,state error");
 
             try
             {
@@ -217,7 +217,7 @@ namespace Socean.Rpc.Core
         public void Send(byte[] sendBuffer, int messageByteCount)
         {
             if (_state != 1)
-                throw new Exception("tcpTransport send,state error");
+                throw new RpcException("tcpTransport send,state error");
 
             try
             {
@@ -280,7 +280,7 @@ namespace Socean.Rpc.Core
         internal BytesCache(int defaultByteLength)
         {
             if (defaultByteLength <= 0)
-                throw new Exception("BytesCache length error");
+                throw new RpcException("BytesCache length error");
 
             _defaultByteLength = defaultByteLength;
             _buffer = new byte[_defaultByteLength];

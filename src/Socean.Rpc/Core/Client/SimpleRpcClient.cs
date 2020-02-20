@@ -14,9 +14,11 @@ namespace Socean.Rpc.Core.Client
         private volatile uint _messageToken = 0;
         private volatile TcpTransport _transport;
         private readonly IQueryContext _syncQueryContext;
-        private readonly IQueryContext _asyncQueryContext;
-        private volatile bool _isSyncQuery;
-        private volatile int _isBusy;
+
+        /// <summary>
+        /// 0 idle,1 run
+        /// </summary>
+        private volatile int _stateCode;
 
         public SimpleRpcClient(IPAddress ip, int port)
         {
@@ -25,11 +27,7 @@ namespace Socean.Rpc.Core.Client
 
             _transport = new TcpTransport(this, ServerIP, ServerPort);
             _syncQueryContext = new SyncQueryContext();
-            _asyncQueryContext = new AsyncQueryContext();
-            if (NetworkSettings.HighResponse)
-                _asyncQueryContext = new HighResponseQueryContextFacade(_asyncQueryContext);
         }
-
 
         private int GenerateMessageId()
         {
@@ -50,13 +48,13 @@ namespace Socean.Rpc.Core.Client
                 }
             }
 
-            if (_transport.State == -1)
+            var transportState = _transport.State;
+            if (transportState == -1)
             {
                 _transport = new TcpTransport(this, ServerIP, ServerPort);
                 _transport.Init();
             }
-
-            if (_transport.State == 0)
+            if (transportState == 0)
             {
                 _transport.Init();
             }
@@ -67,67 +65,21 @@ namespace Socean.Rpc.Core.Client
             if (_transport == null)
                 throw new RpcException("queryAsync failed,connection has been closed");
 
-            var originalValue = Interlocked.Exchange(ref _isBusy, 1);
-            if (originalValue == 1)
+            var originalValue = Interlocked.Exchange(ref _stateCode, 1);
+            if (originalValue != 0)
                 throw new RpcException("queryAsync failed,connection is busy");
 
             try
             {
-                return await Task<FrameData>.Run(async () =>
+                return await Task.Run(() =>
                 {
-                    return await QueryAsyncInternal(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
+                    return QueryInternal(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
                 });
             }
             finally
             {
-                _isBusy = 0;
+                _stateCode = 0;
             }
-        }
-
-        private async Task<FrameData> QueryAsyncInternal(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
-        {
-            if (titleBytes == null)
-                throw new ArgumentNullException("titleBytes");
-
-            if (titleBytes.Length > 65535)
-                throw new ArgumentOutOfRangeException("titleBytes");
-
-            _isSyncQuery = false;
-
-            int messageId = GenerateMessageId();
-
-            var messageByteCount = FrameFormat.ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
-            var sendBuffer = _transport.SendBufferCache.Get(messageByteCount);
-
-            FrameFormat.FillFrame(sendBuffer,extentionBytes, titleBytes, contentBytes, 0, messageId);
-
-            _asyncQueryContext.Reset(messageId);
-
-            CheckConnection();
-
-            //if (NetworkSettings.ServerTcpSendMode == TcpSendMode.Async)
-            //    _transport.SendAsync(sendBuffer, messageByteCount);
-            //else
-                _transport.Send(sendBuffer, messageByteCount);
-
-            _transport.SendBufferCache.Cache(sendBuffer);
-
-            var receiveData = await _asyncQueryContext.WaitForResult(messageId, NetworkSettings.ReceiveTimeout);
-            
-            if (receiveData == null)
-            {
-                _transport.Close();
-                throw new RpcException("queryAsync failed, time is out");
-            }
-
-            if (throwIfErrorResponseCode)
-            {
-                var stateCode = receiveData.StateCode;
-                if (stateCode != (byte)ResponseCode.OK)
-                    throw new RpcException("queryAsync failed,error code:" + stateCode);
-            }
-
-            return receiveData;
         }
 
         public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
@@ -135,8 +87,8 @@ namespace Socean.Rpc.Core.Client
             if (_transport == null)
                 throw new RpcException("query failed,connection has been closed");
 
-            var originalValue = Interlocked.Exchange(ref _isBusy, 1);
-            if (originalValue == 1)
+            var originalValue = Interlocked.Exchange(ref _stateCode, 1);
+            if (originalValue != 0)
                 throw new RpcException("query failed,connection is busy");
 
             try
@@ -145,7 +97,7 @@ namespace Socean.Rpc.Core.Client
             }
             finally
             {
-                _isBusy = 0;
+                _stateCode = 0;
             }
         }
 
@@ -157,28 +109,19 @@ namespace Socean.Rpc.Core.Client
             if (titleBytes.Length > 65535)
                 throw new ArgumentOutOfRangeException("titleBytes");
 
-            _isSyncQuery = true;
-
             int messageId = GenerateMessageId();
-
             var messageByteCount = FrameFormat.ComputeFrameByteCount(extentionBytes, titleBytes, contentBytes);
             var sendBuffer = _transport.SendBufferCache.Get(messageByteCount);
-
             FrameFormat.FillFrame(sendBuffer,extentionBytes, titleBytes, contentBytes, 0, messageId);
 
             _syncQueryContext.Reset(messageId);
 
             CheckConnection();
-
-            //if (NetworkSettings.TcpRequestSendMode == TcpSendMode.Async)
-            //    _transport.SendAsync(sendBuffer, messageByteCount);
-            //else
-                _transport.Send(sendBuffer, messageByteCount);
-
+                
+            _transport.Send(sendBuffer, messageByteCount);
             _transport.SendBufferCache.Cache(sendBuffer);
 
-            var receiveData = _syncQueryContext.WaitForResult(messageId, NetworkSettings.ReceiveTimeout).Result;
-            
+            var receiveData = _syncQueryContext.WaitForResult(messageId, NetworkSettings.ReceiveTimeout);            
             if (receiveData == null)
             {
                 _transport.Close();
@@ -216,10 +159,8 @@ namespace Socean.Rpc.Core.Client
 
         internal override void OnReceiveMessage(TcpTransport tcpTransport, FrameData frameData)
         {
-            if (_isSyncQuery)
+            if (_stateCode == 1)
                 _syncQueryContext.OnReceive(frameData);
-            else
-                _asyncQueryContext.OnReceive(frameData);
         }
 
         internal override void OnCloseTransport(TcpTransport tcpTransport)

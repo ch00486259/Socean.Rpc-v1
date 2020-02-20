@@ -13,8 +13,10 @@ namespace Socean.Rpc.Core
         private static int _clientCacheSize = 3;
         private static int _serverListenBacklog = 50000;
         private static int _reconnectInterval = 5000;
+
         private static CommunicationMode _serverTcpSendMode = CommunicationMode.Sync;
 
+        [Obsolete]
         public static int ClientDetectReceiveInterval
         {
             get { return _clientDetectReceiveInterval;}
@@ -111,14 +113,16 @@ namespace Socean.Rpc.Core
             }
         }
 
+        [Obsolete]
         public static CommunicationMode ServerTcpSendMode
         {
             get { return _serverTcpSendMode;}
             set { _serverTcpSendMode = value; }
         }
 
+        [Obsolete]
         public static bool HighResponse { get; set; }
-
+     
         public static CommunicationMode ServerProcessMode { get; set; } = CommunicationMode.Async;
 
         public static byte[] GetClientKeepAliveInfo()

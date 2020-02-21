@@ -238,5 +238,5 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
   其他：
      
   1.NetworkSettings类可修改连接超时时间等参数  
-  
+  2.因Unity3D下无法使用Emit，所以EasyProxy不可用，请移除DynamicProxy空间下的文件即可
   

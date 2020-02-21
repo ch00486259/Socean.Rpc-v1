@@ -38,7 +38,8 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Client\QueryContext.cs" />
+    <Compile Include="Core\Client\AsyncQueryContext.cs" />
+    <Compile Include="Core\Client\SyncQueryContext.cs" />
     <Compile Include="Core\Client\IClient.cs" />
     <Compile Include="CoreExtention\SimpleRpcClientPoolRoot.cs" />
     <Compile Include="CoreExtention\FastRpcClient.cs" />

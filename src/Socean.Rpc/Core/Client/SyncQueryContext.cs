@@ -8,28 +8,27 @@ namespace Socean.Rpc.Core.Client
 {
     internal class SyncQueryContext : IQueryContext
     {
-        public SyncQueryContext()
+        internal SyncQueryContext()
         {
 
         }
 
-        //private readonly ResetEvent _autoResetEvent = new ResetEvent();
         private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
         private volatile FrameData _frameData;
-        private volatile int _messageId = -1;
+        private volatile int _waitingMessageId = -1;
 
         public void Reset(int messageId)
         {
-            _messageId = messageId;
+            _waitingMessageId = messageId;
             _frameData = null;
         }
 
-        public bool OnReceive(FrameData frameData)
+        public bool OnReceiveResult(FrameData frameData)
         {
             if (frameData == null)
                 return false;
 
-            if (_messageId != frameData.MessageId)
+            if (_waitingMessageId != frameData.MessageId)
                 return false;
             
             _frameData = frameData;
@@ -38,24 +37,24 @@ namespace Socean.Rpc.Core.Client
             return true;
         }
 
-        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
+        public Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout)
         {
-            if (millisecondsTimeout == 0)
+            if (millisecondsTimeout <= 0)
             {
                 var _receiveData = _frameData;
                 _frameData = null;
-                _messageId = -1;
+                _waitingMessageId = -1;
 
-                return _receiveData;
+                return Task.FromResult(_receiveData);
             }
             
             _autoResetEvent.WaitOne(millisecondsTimeout);
              
             var receiveData = _frameData;
             _frameData = null;
-            _messageId = -1;
+            _waitingMessageId = -1;
 
-            return receiveData;
+            return Task.FromResult(receiveData);
         }        
     }
 
@@ -63,8 +62,8 @@ namespace Socean.Rpc.Core.Client
     {
         void Reset(int messageId);
 
-        bool OnReceive(FrameData frameData);
+        bool OnReceiveResult(FrameData frameData);
 
-        FrameData WaitForResult(int messageId, int millisecondsTimeout);
+        Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout);
     }
 }

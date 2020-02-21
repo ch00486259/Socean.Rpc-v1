@@ -21,11 +21,9 @@ namespace Socean.Rpc.Core
 
     public class ErrorResponse : ResponseBase
     {
-        public string Message { get; }
-
-        public ErrorResponse(byte code, string message = null) : base(FrameFormat.EmptyBytes, Encoding.UTF8.GetBytes(message ?? string.Empty), code)
+        public ErrorResponse(byte code) : base(FrameFormat.EmptyBytes, FrameFormat.EmptyBytes, code)
         {
-            Message = message ?? string.Empty;
+
         }
     }
 

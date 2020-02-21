@@ -26,4 +26,14 @@ namespace Socean.Rpc.Core
             HeaderExtention = entention ?? string.Empty;
         }
     }
+
+    public class ErrorMessageResponse : ResponseBase
+    {
+        public string Message { get; }
+
+        public ErrorMessageResponse(byte code, string message = null) : base(FrameFormat.EmptyBytes, RpcExtentionSettings.DefaultEncoding.GetBytes(message ?? string.Empty), code)
+        {
+            Message = message ?? string.Empty;
+        }
+    }
 }

@@ -106,7 +106,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
     
    3.生成代理服务
    
-     var bookServiceProxy = EasyProxyGenerator<IBookService>.Create(IPAddress.Parse("127.0.0.1"), 11111, new RpcSerializer();
+     var bookServiceProxy = EasyProxyGenerator<IBookService>.Create(IPAddress.Parse("127.0.0.1"), 11111, new RpcSerializer());
    
    4.执行函数
    
@@ -116,9 +116,9 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
  
  其他用法
     
-    想实现日志或鉴权等功能，可以使用ServiceFilter
+  想实现日志或鉴权等功能，可以使用ServiceFilter
     
-    1.定义日志记录ServiceFilter
+  1.定义日志记录ServiceFilter
     
     public class LogFilter : IServiceFilter
     {       
@@ -132,7 +132,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
         }
     }
     
-    2.注册日志记录Filter
+  2.注册日志记录Filter
     
     public class CustomMessageProcessor : Socean.Rpc.DynamicProxy.EasyProxyMessageProcessor
     {

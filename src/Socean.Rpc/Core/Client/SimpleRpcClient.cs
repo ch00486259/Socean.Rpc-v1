@@ -67,8 +67,8 @@ namespace Socean.Rpc.Core.Client
             if (_transport == null)
                 throw new RpcException("queryAsync failed,connection has been closed");
 
-            var originalValue = Interlocked.Exchange(ref _stateCode, 2);
-            if (originalValue != 0)
+            var originalStateCode = Interlocked.CompareExchange(ref _stateCode, 2,0);
+            if (originalStateCode != 0)
                 throw new RpcException("queryAsync failed,connection is busy");
 
             try
@@ -122,8 +122,8 @@ namespace Socean.Rpc.Core.Client
             if (_transport == null)
                 throw new RpcException("query failed,connection has been closed");
 
-            var originalValue = Interlocked.Exchange(ref _stateCode, 1);
-            if (originalValue != 0)
+            var originalStateCode = Interlocked.CompareExchange(ref _stateCode, 1, 0);
+            if (originalStateCode != 0)
                 throw new RpcException("query failed,connection is busy");
 
             try

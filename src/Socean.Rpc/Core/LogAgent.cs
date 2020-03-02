@@ -14,10 +14,7 @@ namespace Socean.Rpc.Core
     {
         public static LogLevel Level = LogLevel.Info;
 
-        public static Action<LogLevel, string, Exception> LogAction = (level, message, ex) =>
-        {
-           
-        };
+        public static Action<LogLevel, string, Exception> LogAction;
 
         internal static void Warn(string message, Exception ex = null)
         {

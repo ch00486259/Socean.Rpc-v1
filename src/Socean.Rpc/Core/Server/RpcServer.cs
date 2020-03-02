@@ -172,7 +172,7 @@ namespace Socean.Rpc.Core.Server
 
                 }
 
-                LogAgent.Warn(ex.Message);
+                LogAgent.Warn("close network in tcpTransport Init", ex);
                 return;
             }
 

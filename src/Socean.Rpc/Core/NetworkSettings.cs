@@ -5,29 +5,12 @@ namespace Socean.Rpc.Core
 {
     public static class NetworkSettings
     {
-        private static int _clientDetectReceiveInterval = 5;
         private static int _receiveTimeout = 1000 * 10;
         private static int _sendTimeout = 1000 * 10;
         private static int _writeBufferSize = 4096;
         private static int _readBufferSize = 4096;
         private static int _clientCacheSize = 3;
         private static int _serverListenBacklog = 50000;
-        private static int _reconnectInterval = 5000;
-
-        private static CommunicationMode _serverTcpSendMode = CommunicationMode.Sync;
-
-        [Obsolete]
-        public static int ClientDetectReceiveInterval
-        {
-            get { return _clientDetectReceiveInterval;}
-            set
-            {
-                if (value < 0)
-                    throw new Exception();
-
-                _clientDetectReceiveInterval = value;
-            }
-        }
 
         public static int ReceiveTimeout
         {
@@ -89,18 +72,6 @@ namespace Socean.Rpc.Core
             }
         }
 
-        public static int ReconnectInterval
-        {
-            get { return _reconnectInterval;}
-            set
-            {
-                if (value <= 0)
-                    throw new Exception();
-
-                _reconnectInterval = value;
-            }
-        }
-
         public static int ServerListenBacklog
         {
             get { return _serverListenBacklog;}
@@ -114,18 +85,13 @@ namespace Socean.Rpc.Core
         }
 
         [Obsolete]
-        public static CommunicationMode ServerTcpSendMode
-        {
-            get { return _serverTcpSendMode;}
-            set { _serverTcpSendMode = value; }
-        }
-
-        [Obsolete]
-        public static bool HighResponse { get; set; }
+        public static CommunicationMode ServerTcpSendMode { get; set; } = CommunicationMode.Async;
      
         public static CommunicationMode ServerProcessMode { get; set; } = CommunicationMode.Async;
 
-        public static byte[] GetClientKeepAliveInfo()
+        public static bool HighResponse { get; set; }
+
+        internal static byte[] GetClientKeepAliveInfo()
         {
             var uintSize = Marshal.SizeOf(0);
             byte[] inOptionValues = new byte[uintSize * 3];
@@ -136,7 +102,7 @@ namespace Socean.Rpc.Core
             return inOptionValues;
         }
 
-        public static byte[] GetServerKeepAliveInfo()
+        internal static byte[] GetServerKeepAliveInfo()
         {
             var uintSize = Marshal.SizeOf(0);
             byte[] inOptionValues = new byte[uintSize * 3];

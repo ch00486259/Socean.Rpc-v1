@@ -16,6 +16,7 @@ namespace Socean.Rpc.Core.Client
         private volatile int _waitingMessageId = -1;
         private volatile TaskCompletionSource<int> _taskCompletionSource;
         private readonly Stopwatch _stopwatch = new Stopwatch();
+        private const int DEFAULT_DELAY_MS = 10;
 
         public void Reset(int messageId)
         {
@@ -51,9 +52,11 @@ namespace Socean.Rpc.Core.Client
 
             _stopwatch.Restart();
 
-            while(true)
+            var delayMillisecond = NetworkSettings.HighResponse ? 1 : DEFAULT_DELAY_MS;
+
+            while (true)
             {
-                var t = Task.WhenAny(Task.Delay(1), _taskCompletionSource.Task);
+                var t = Task.WhenAny(Task.Delay(delayMillisecond), _taskCompletionSource.Task);
                 await t;
 
                 if (_taskCompletionSource.Task.IsCompleted)

@@ -82,13 +82,13 @@ namespace Socean.Rpc.Core.Client
     {
         private static readonly ConcurrentDictionary<string, SimpleRpcClientPool> _poolDictionary = new ConcurrentDictionary<string, SimpleRpcClientPool>();
 
-        public static IClient GetItem(IPAddress ip, int port)
+        public static IClient Depool(IPAddress ip, int port)
         {
             var factory = GetOrAddPool(ip, port);
             return factory.Get();
         }
 
-        public static bool ReturnItem(SimpleRpcClient rpcClient)
+        public static bool Enpool(SimpleRpcClient rpcClient)
         {
             var factory = GetOrAddPool(rpcClient.ServerIP, rpcClient.ServerPort);
             return factory.Return(rpcClient);

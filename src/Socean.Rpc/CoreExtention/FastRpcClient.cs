@@ -11,51 +11,110 @@ namespace Socean.Rpc.Core.Client
         public IPAddress ServerIP { get; }
         public int ServerPort { get; }
 
-        private SimpleRpcClient _client;
+        private volatile SimpleRpcClient _client;
+
+        /// <summary>
+        /// 0 idle, 1 querying
+        /// </summary>
+        private volatile int _queryState;
 
         public FastRpcClient(IPAddress ip, int port)
         {
             ServerIP = ip;
             ServerPort = port;
 
-            _client = (SimpleRpcClient)SimpleRpcClientPoolRoot.GetItem(ip, port);
+            _client = (SimpleRpcClient)SimpleRpcClientPoolRoot.Depool(ip, port);
         }
 
+        private void TransportKeepAlive()
+        {
+            if (_client.IsSocketConnected == false)
+            {
+                try
+                {
+                    _client.Close();
+                }
+                catch
+                {
+
+                }
+            }
+
+            if (_client.TransportState == TcpTransportState.Closed)
+            {
+                var oldClient = _client;
+                if (oldClient == null)
+                    throw new RpcException("FastRpcClient TransportKeepAlive failed,client has been been closed");
+
+                var newClient = (SimpleRpcClient)SimpleRpcClientPoolRoot.Depool(ServerIP, ServerPort);
+                var originalClient = Interlocked.CompareExchange(ref _client, newClient, oldClient);
+                if (originalClient != oldClient)
+                {
+                    SimpleRpcClientPoolRoot.Enpool(newClient);
+                    throw new RpcException("FastRpcClient TransportKeepAlive failed,client has been been closed");
+                }
+            }
+        }
+        
         public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
         {
             if (_client == null)
-                throw new RpcException("client has been closed");
+                throw new RpcException("FastRpcClient Query failed,client has been been closed");
 
-            return _client.Query(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
+            var originalQueryState = Interlocked.CompareExchange(ref _queryState, 1, 0);
+            if (originalQueryState != 0)
+                throw new RpcException("FastRpcClient Query failed,client is querying");
+
+            try
+            {
+                TransportKeepAlive();
+                return _client.Query(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
+            }
+            finally
+            {
+                _queryState = 0;
+            }
         }
 
         public async Task<FrameData> QueryAsync(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
         {
             if (_client == null)
-                throw new RpcException("client has been closed");
+                throw new RpcException("FastRpcClient QueryAsync failed,client has been closed");
 
-            return await _client.QueryAsync(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
+            var originalQueryState = Interlocked.CompareExchange(ref _queryState, 1, 0);
+            if (originalQueryState != 0)
+                throw new RpcException("FastRpcClient QueryAsync failed,client is querying");
+
+            try
+            {
+                TransportKeepAlive();
+                return await _client.QueryAsync(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode).ConfigureAwait(false);
+            }
+            finally
+            {
+                _queryState = 0;
+            }
         }
 
         public void Close()
         {
-            if (_client == null)
+            var originalClient = Interlocked.Exchange(ref _client, null);
+            if (originalClient == null)
                 return;
 
-            var oldValue = Interlocked.Exchange(ref _client, null);
-            if (oldValue == null)
+            if (originalClient.TransportState == TcpTransportState.Closed)
                 return;
 
-            var cacheResult = SimpleRpcClientPoolRoot.ReturnItem(oldValue);
+            var cacheResult = SimpleRpcClientPoolRoot.Enpool(originalClient);
             if (cacheResult == false)
             {
                 try
                 {
-                    oldValue.Dispose();
+                    originalClient.Dispose();
                 }
                 catch
                 {
-                    LogAgent.Error("SimpleRpcCLient Dispose error");
+                    LogAgent.Warn("SimpleRpcClient Dispose error");
                 }
             }
         }

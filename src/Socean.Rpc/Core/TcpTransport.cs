@@ -5,7 +5,7 @@ using System.Threading;
 using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core
-{
+{   
     internal class TcpTransport : ITransport, IDisposable
     { 
         internal TcpTransport(TcpTransportHostBase transportHost, IPAddress ip, int port )
@@ -25,16 +25,17 @@ namespace Socean.Rpc.Core
 
         private readonly TcpTransportHostBase _transportHost;
         private readonly ReceiveProcessor _receiveProcessor;
-        private Socket _socket;
+        private volatile Socket _socket;
         private ReceiveCallbackData _tempReceiveCallbackData = new ReceiveCallbackData();
+        internal readonly BytesCache SendBufferCache = new BytesCache(NetworkSettings.WriteBufferSize);
 
-        internal int State
+        internal TcpTransportState State
         {
-            get { return _state; }
+            get { return (TcpTransportState)_state; }
         }
 
         /// <summary>
-        /// 0 未初始化 1 连接 -1 断开连接 
+        /// 0 uninit, 1 connecting, 2 connected,  -1 closed 
         /// </summary>
         private volatile int _state;
 
@@ -43,10 +44,10 @@ namespace Socean.Rpc.Core
             if (_state != 0)
                 return;
 
-            var oldValue = Interlocked.Exchange(ref _state, 1);
-            if (oldValue == 1)
+            var originalState = Interlocked.CompareExchange(ref _state, 1, 0);
+            if (originalState != 0)
                 return;
-
+          
             if (socket == null)
             {
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -70,10 +71,13 @@ namespace Socean.Rpc.Core
                 _socket.NoDelay = true;
             }
 
+            var originalState2 = Interlocked.CompareExchange(ref _state, 2, 1);
+            if (originalState2 != 1)
+                return;
+           
             BeginNewReceive(true);
         }
               
-
         public bool? IsSocketConnected
         {
             get
@@ -87,44 +91,29 @@ namespace Socean.Rpc.Core
 
         private void BeginNewReceive(bool isReset = false)
         {
-            try
-            {
-                if(isReset)
-                    _receiveProcessor.Reset();
-                _receiveProcessor.GetNextReceiveCallbackData(ref _tempReceiveCallbackData);
-                _socket.BeginReceive(_tempReceiveCallbackData.Buffer, _tempReceiveCallbackData.Offset, _tempReceiveCallbackData.Size, SocketFlags.None, ReceiveCallback, this);
-            }
-            catch(Exception ex)
-            {
-                LogAgent.Warn("tcpTransport BeginNewReceive,socket BeginReceive error", ex);
-                Close();
-                throw;
-            }
+            if(isReset)
+                _receiveProcessor.Reset();
+            _receiveProcessor.GetNextReceiveCallbackData(ref _tempReceiveCallbackData);
+            _socket.BeginReceive(_tempReceiveCallbackData.Buffer, _tempReceiveCallbackData.Offset, _tempReceiveCallbackData.Size, SocketFlags.None, ReceiveCallback, this);
         }
 
         private static void SendCallback(IAsyncResult ar)
         {
-            var serverTransport = (TcpTransport)ar.AsyncState;
-            if (serverTransport == null)
+            var tcpTransport = (TcpTransport)ar.AsyncState;
+            if (tcpTransport == null)
                 return;
 
-            if (serverTransport._state != 1)
+            if (tcpTransport._state != 2)
                 return;
-
-            int sendCount = 0;
 
             try
             {
-                sendCount = serverTransport._socket.EndSend(ar);
+                var sendCount = tcpTransport._socket.EndSend(ar);
             }
             catch(Exception ex)
             {
-                LogAgent.Warn("tcpTransport SendCallback,socket EndSend error", ex);                 
-            }
-
-            if (sendCount <= 0)
-            {
-                serverTransport.Close();
+                tcpTransport.Close();
+                LogAgent.Warn("close network in tcpTransport SendCallback,socket EndSend error", ex);
                 return;
             }
         }
@@ -135,29 +124,25 @@ namespace Socean.Rpc.Core
             if (tcpTransport == null)
                 return;
 
-            if (tcpTransport._state != 1)
+            if (tcpTransport._state != 2)
                 return;
 
-            int readCount = -1;
+            int readCount;
             try
             {
                 readCount = tcpTransport._socket.EndReceive(ar);
             }
             catch(Exception ex)
             {
-                LogAgent.Warn("tcpTransport ReceiveCallback,socket EndReceive error", ex);
-            }
-
-            if (readCount == -1)
-            {
                 tcpTransport.Close();
+                LogAgent.Warn("close network in tcpTransport ReceiveCallback,socket EndReceive error", ex);
                 return;
             }
 
-            if (readCount == 0)
+            if (readCount <= 0)
             {
-                LogAgent.Info("tcpTransport ReceiveCallback,socket receive size:0,remote socket is closed");
                 tcpTransport.Close(false);
+                LogAgent.Debug("close network in tcpTransport ReceiveCallback,socket receive size:0,remote socket is closed");
                 return;
             }
 
@@ -167,9 +152,13 @@ namespace Socean.Rpc.Core
             {
                 var step = receiveProcessor.CheckCurrentStep(readCount);
                 if (step == -1)
-                    throw new RpcException("tcpTransport ReceiveCallback,receiveProcessor CheckCurrentStep error");
+                {
+                    tcpTransport.Close();
+                    LogAgent.Warn("close network in tcpTransport ReceiveCallback,receiveProcessor CheckCurrentStep error");
+                    return;
+                }
 
-                if(step == 0)
+                if (step == 0)
                 {
                     tcpTransport.BeginNewReceive(false);
                     return;
@@ -178,10 +167,9 @@ namespace Socean.Rpc.Core
             catch(Exception ex)
             {
                 tcpTransport.Close();
-                LogAgent.Warn("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
+                LogAgent.Warn("close network in tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
                 return;
             }
-
 
             try
             {
@@ -192,15 +180,15 @@ namespace Socean.Rpc.Core
             catch (Exception ex)
             {
                 tcpTransport.Close();
-                LogAgent.Warn("tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
+                LogAgent.Warn("close network in tcpTransport ReceiveCallback,tcpTransport BeginNewReceive error", ex);
                 return;
             }
         }
 
         public void SendAsync(byte[] sendBuffer, int messageByteCount)
         {
-            if (_state != 1)
-                throw new RpcException("tcpTransport SendAsync,state error");
+            if (_state != 2)
+                throw new RpcException("tcpTransport SendAsync failed,state error");
 
             try
             {
@@ -209,15 +197,15 @@ namespace Socean.Rpc.Core
             catch(Exception ex)
             {
                 Close();
-                LogAgent.Warn("tcpTransport SendAsync,socket BeginSend error", ex);
+                LogAgent.Warn("close network in tcpTransport SendAsync,socket BeginSend error", ex);
                 throw;
             }
         }
 
         public void Send(byte[] sendBuffer, int messageByteCount)
         {
-            if (_state != 1)
-                throw new RpcException("tcpTransport send,state error");
+            if (_state != 2)
+                throw new RpcException("tcpTransport Send failed,state error");
 
             try
             {
@@ -226,7 +214,7 @@ namespace Socean.Rpc.Core
             catch (Exception ex)
             {
                 Close();
-                LogAgent.Warn("tcpTransport Send,socket Send error", ex);
+                LogAgent.Warn("close network in tcpTransport Send,socket Send error", ex);
                 throw;
             }
         }
@@ -241,8 +229,8 @@ namespace Socean.Rpc.Core
             if (_state == -1)
                 return;
 
-            var oldValue = Interlocked.Exchange(ref _state, -1);
-            if (oldValue == -1)
+            var originalState = Interlocked.Exchange(ref _state, -1);
+            if (originalState == -1)
                 return;
 
             try
@@ -271,8 +259,6 @@ namespace Socean.Rpc.Core
         {
             Close();
         }
-
-        internal BytesCache SendBufferCache = new BytesCache(NetworkSettings.WriteBufferSize);        
     }
 
     internal class BytesCache
@@ -318,12 +304,20 @@ namespace Socean.Rpc.Core
         }
     }
 
-    public interface ITransport 
+    internal interface ITransport 
     {
         void Send(byte[] sendBuffer, int messageByteCount);
 
         void SendAsync(byte[] sendBuffer, int messageByteCount);
 
-        void Close(bool onlyCloseSocket);
+        void Close(bool shutDownSocket);
+    }
+
+    public enum TcpTransportState
+    {
+        Uninit = 0,
+        Connecting = 1,
+        Connected = 2,
+        Closed = -1
     }
 }

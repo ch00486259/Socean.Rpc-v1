@@ -25,7 +25,6 @@ namespace Test.Client
             NetworkSettings.ReceiveTimeout = 10000;
             NetworkSettings.SendTimeout = 10000;
             NetworkSettings.HighResponse = true;
-            NetworkSettings.ClientDetectReceiveInterval = 1;
             NetworkSettings.ClientCacheSize = 100;
 
             LogAgent.LogAction = (level, message, ex) =>

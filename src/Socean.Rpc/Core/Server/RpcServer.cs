@@ -18,16 +18,16 @@ namespace Socean.Rpc.Core.Server
         public IPAddress ServerIP { get; private set; }
         public int ServerPort { get; private set; }
 
-        private IMessageProcessor _messageProcessor;
-        private ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>();
+        private volatile IMessageProcessor _messageProcessor;
+        private readonly ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>();
 
         /// <summary>
         /// description：
-        /// 0  uninit
-        /// 1  starting
-        /// 2  started
-        /// 3  closing
-        /// -1 closed
+        ///    0  uninit
+        ///    1  starting
+        ///    2  started
+        ///    3  closing
+        ///    -1 closed
         ///
         /// sequence：
         ///    0 -> 1 -> 2 -> 3 -> -1
@@ -56,17 +56,17 @@ namespace Socean.Rpc.Core.Server
                 throw new ArgumentOutOfRangeException("ServerPort");
 
             if(_serverState != 0)
-                throw new RpcException("rpcserver has started");
-
-            _messageProcessor = new T(); 
-            _messageProcessor.Init();
+                throw new RpcException("RpcServer Start failed,state error");
 
             var originState = Interlocked.CompareExchange(ref _serverState, 1, 0);
             if (originState != 0)
-                throw new RpcException("rpcserver has started");
+                throw new RpcException("RpcServer Start failed,state error");
 
             try
             {
+                _messageProcessor = new T();
+                _messageProcessor.Init();
+
                 var inOptionValues = NetworkSettings.GetServerKeepAliveInfo();
                 var backlog = NetworkSettings.ServerListenBacklog;
 
@@ -116,7 +116,7 @@ namespace Socean.Rpc.Core.Server
             }
             catch(Exception ex)
             {
-                LogAgent.Warn(ex.Message);
+                LogAgent.Warn("RpcServer AcceptSocketCallback failed,EndAccept error",ex);
             }
 
             try
@@ -136,7 +136,7 @@ namespace Socean.Rpc.Core.Server
 
                 }
 
-                LogAgent.Warn(ex.Message);
+                LogAgent.Warn("close network in RpcServer AcceptSocketCallback,BeginAccept error", ex);
                 return;
             }
 
@@ -152,6 +152,7 @@ namespace Socean.Rpc.Core.Server
 
                 }
 
+                LogAgent.Warn("close network in RpcServer AcceptSocketCallback,client RemoteEndPoint is null");
                 return;
             }
 
@@ -172,7 +173,7 @@ namespace Socean.Rpc.Core.Server
 
                 }
 
-                LogAgent.Warn("close network in tcpTransport Init", ex);
+                LogAgent.Warn("close network in RpcServer AcceptSocketCallback,tcpTransport Init error", ex);
                 return;
             }
 
@@ -185,22 +186,18 @@ namespace Socean.Rpc.Core.Server
         }
 
         private static async void ProcessReceive(TcpTransport serverTransport, FrameData frameData,
-           IMessageProcessor messageProcessor)
+            IMessageProcessor messageProcessor)
         {
-            byte[] responseExtention = null;
-            byte[] responseContent = null;
-            byte responseCode = 0;
+            ResponseBase response = null;
+
+            if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
+                response = new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
+
+            if (messageProcessor == null)
+                response = new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
 
             try
             {
-                ResponseBase response = null;
-
-                if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
-                    response = new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
-
-                if (messageProcessor == null)
-                    response = new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
-
                 if (response == null)
                 {
                     if (NetworkSettings.ServerProcessMode == CommunicationMode.Sync)
@@ -214,17 +211,15 @@ namespace Socean.Rpc.Core.Server
                         response = await messageProcessor.Process(frameData);  
                     }
                 }
-
-                responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;
-                responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
-                responseCode = (byte)response.Code;
             }
             catch
             {
-                responseExtention = FrameFormat.EmptyBytes;
-                responseContent = FrameFormat.EmptyBytes;
-                responseCode = (byte)ResponseCode.SERVER_INTERNAL_ERROR;
+                response = new ErrorResponse((byte)ResponseCode.SERVER_INTERNAL_ERROR);
             }
+
+            var responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;
+            var responseContent = response.ContentBytes ?? FrameFormat.EmptyBytes;
+            var responseCode = response.Code;
 
             try
             {

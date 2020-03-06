@@ -96,7 +96,7 @@ namespace Socean.Rpc.Core
             var uintSize = Marshal.SizeOf(0);
             byte[] inOptionValues = new byte[uintSize * 3];
             BitConverter.GetBytes((uint)1).CopyTo(inOptionValues, 0);
-            BitConverter.GetBytes((uint)120000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize));
+            BitConverter.GetBytes((uint)30000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize));
             BitConverter.GetBytes((uint)2000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize) * 2);
 
             return inOptionValues;
@@ -107,7 +107,7 @@ namespace Socean.Rpc.Core
             var uintSize = Marshal.SizeOf(0);
             byte[] inOptionValues = new byte[uintSize * 3];
             BitConverter.GetBytes((uint)1).CopyTo(inOptionValues, 0);
-            BitConverter.GetBytes((uint)600000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize));
+            BitConverter.GetBytes((uint)60000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize));
             BitConverter.GetBytes((uint)2000).CopyTo(inOptionValues, Marshal.SizeOf(uintSize) * 2);
 
             return inOptionValues;

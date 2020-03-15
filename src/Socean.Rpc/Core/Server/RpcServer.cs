@@ -19,7 +19,7 @@ namespace Socean.Rpc.Core.Server
         public int ServerPort { get; private set; }
 
         private volatile IMessageProcessor _messageProcessor;
-        private readonly ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>();
+        private readonly ConcurrentDictionary<string, TcpTransport> _clientTransportDictionary = new ConcurrentDictionary<string, TcpTransport>(32,1024);
 
         /// <summary>
         /// description：

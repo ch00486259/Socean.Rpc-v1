@@ -44,7 +44,6 @@
     <Compile Include="Core\Client\IClient.cs" />
     <Compile Include="CoreExtention\SimpleRpcClientPoolRoot.cs" />
     <Compile Include="CoreExtention\FastRpcClient.cs" />
-    <Compile Include="Core\Client\ResetEvent.cs" />
     <Compile Include="Core\RpcException.cs" />
     <Compile Include="Core\Server\IServer.cs" />
     <Compile Include="Core\TcpTransportHostBase.cs" />

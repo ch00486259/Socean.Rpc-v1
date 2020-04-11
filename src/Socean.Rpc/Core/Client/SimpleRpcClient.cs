@@ -13,8 +13,8 @@ namespace Socean.Rpc.Core.Client
 
         private readonly RequestMessageConstructor _requestMessageConstructor;
         private readonly TcpTransport _transport;
-        private readonly IQueryContext _syncQueryContext;
-        private readonly IQueryContext _asyncQueryContext;
+        private readonly SyncQueryContext _syncQueryContext;
+        private readonly AsyncQueryContext _asyncQueryContext;
 
         internal bool? IsSocketConnected { get { return _transport.IsSocketConnected; } }
         internal TcpTransportState TransportState { get { return _transport.State; } }
@@ -144,7 +144,7 @@ namespace Socean.Rpc.Core.Client
         {
             _syncQueryContext.Reset(rmc.MessageId);                 
             _transport.Send(rmc.SendBuffer, rmc.MessageByteCount);
-            var receiveData = _syncQueryContext.WaitForResult(rmc.MessageId, NetworkSettings.ReceiveTimeout).Result;            
+            var receiveData = _syncQueryContext.WaitForResult(rmc.MessageId, NetworkSettings.ReceiveTimeout);            
             if (receiveData == null)
             {
                 _transport.Close();

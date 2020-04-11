@@ -26,7 +26,7 @@ namespace Socean.Rpc.DynamicProxy
             if (returnType == typeof(void))
                 return null;
 
-            var responseContent = response.ReadContentString();
+            var responseContent = response.ReadContentAsString();
             if (string.IsNullOrEmpty(responseContent))
                 return null;
 

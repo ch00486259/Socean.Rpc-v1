@@ -14,7 +14,7 @@ namespace Socean.Rpc.Core.Client
                 extention == null ? FrameFormat.EmptyBytes : encoding.GetBytes(extention),
                 throwIfErrorResponseCode);
 
-            return frameData.ReadContentString();
+            return frameData.ReadContentAsString();
         }
 
         public byte[] QueryBytes(string title, string content = null, string extention = null, bool throwIfErrorResponseCode = false)

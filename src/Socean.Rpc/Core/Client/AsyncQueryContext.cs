@@ -5,7 +5,7 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    internal class AsyncQueryContext : IQueryContext
+    internal class AsyncQueryContext 
     {
         internal AsyncQueryContext()
         {

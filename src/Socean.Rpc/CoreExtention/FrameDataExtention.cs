@@ -4,7 +4,7 @@ namespace Socean.Rpc.Core.Message
 {
     public partial class FrameData
     {
-        public string ReadContentString()
+        public string ReadContentAsString()
         {
             if (ContentBytes == null)
                 return null;
@@ -12,7 +12,7 @@ namespace Socean.Rpc.Core.Message
             return RpcExtentionSettings.DefaultEncoding.GetString(ContentBytes);
         }
 
-        public string ReadTitleString()
+        public string ReadTitleAsString()
         {
             if (TitleBytes == null)
                 return null;

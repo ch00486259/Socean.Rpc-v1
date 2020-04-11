@@ -5,7 +5,7 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    internal class SyncQueryContext : IQueryContext
+    internal class SyncQueryContext 
     {
         internal SyncQueryContext()
         {
@@ -40,7 +40,7 @@ namespace Socean.Rpc.Core.Client
             return true;
         }
 
-        public Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout)
+        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
         {
             if (millisecondsTimeout <= 0)
             {
@@ -48,7 +48,7 @@ namespace Socean.Rpc.Core.Client
                 _frameData = null;
                 _waitingMessageId = -1;
 
-                return Task.FromResult(_receiveData);
+                return _receiveData;
             }
 
             _receivedOneSet = _autoResetEvent.WaitOne(millisecondsTimeout);
@@ -57,16 +57,7 @@ namespace Socean.Rpc.Core.Client
             _frameData = null;
             _waitingMessageId = -1;
 
-            return Task.FromResult(receiveData);
+            return receiveData;
         }        
-    }
-
-    internal interface IQueryContext
-    {
-        void Reset(int messageId);
-
-        bool OnReceiveResult(FrameData frameData);
-
-        Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout);
     }
 }

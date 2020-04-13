@@ -2,10 +2,10 @@
 
 namespace Socean.Rpc.DynamicProxy
 {
-    public interface IRpcSerializer
-    {
-        string Serialize(object obj);
+    //public interface IRpcSerializer
+    //{
+    //    string Serialize(object obj);
 
-        object Deserialize(string content, Type type);
-    }
+    //    object Deserialize(string content, Type type);
+    //}
 }

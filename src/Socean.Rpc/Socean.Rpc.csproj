@@ -66,6 +66,7 @@
     <Compile Include="DynamicProxy\EncryptHelper.cs" />
     <Compile Include="DynamicProxy\FastRpcClientExtention.cs" />
     <Compile Include="DynamicProxy\FilterChain.cs" />
+    <Compile Include="DynamicProxy\IBinarySerializer.cs" />
     <Compile Include="DynamicProxy\IInterceptor.cs" />
     <Compile Include="DynamicProxy\Invocation.cs" />
     <Compile Include="DynamicProxy\ObjectFactory.cs" />

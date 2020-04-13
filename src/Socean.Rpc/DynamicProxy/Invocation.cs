@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Socean.Rpc.Core.Message;
+using System;
 using System.Reflection;
 
 namespace Socean.Rpc.DynamicProxy
@@ -9,28 +10,28 @@ namespace Socean.Rpc.DynamicProxy
         public readonly Type HandlerTargetType;
         public readonly Type HandlerParameterTupleType;
         public readonly MethodInfo HandlerMethodInfo;
-        public readonly IRpcSerializer RpcSerializer;
+        public readonly IBinarySerializer BinarySerializer;
         private readonly FastInvokeHandler _fastInvokeHandler;
 
-        public Invocation(string key, Type handlerTargetType, MethodInfo handlerMethodInfo, Type handlerParametersTupleType, IRpcSerializer rpcSerializer)
+        public Invocation(string key, Type handlerTargetType, MethodInfo handlerMethodInfo, Type handlerParametersTupleType, IBinarySerializer serializer)
         {
             Key = key;
             HandlerTargetType = handlerTargetType;
             HandlerMethodInfo = handlerMethodInfo;
             HandlerParameterTupleType = handlerParametersTupleType;
-            RpcSerializer = rpcSerializer;
+            BinarySerializer = serializer;
             _fastInvokeHandler = DynamicProxyHelper.CreateFastInvokeHandler(HandlerMethodInfo);
         }
 
-        public string Proceed(string content)
+        public byte[] Proceed(byte[] contentBytes)
         {
             var handlerTarget = ObjectFactory.CreateInstance(HandlerTargetType);
-            var parameterTuple = (ICustomTuple)RpcSerializer.Deserialize(content, HandlerParameterTupleType);
+            var parameterTuple = (ICustomTuple)BinarySerializer.Deserialize(contentBytes, HandlerParameterTupleType);
             var parameterArray = parameterTuple.ToObjectArray();
             var result = _fastInvokeHandler.Invoke(handlerTarget, parameterArray);
             if (result == null)
-                return string.Empty;
-            return RpcSerializer.Serialize(result);
+                return FrameFormat.EmptyBytes;
+            return BinarySerializer.Serialize(result);
         }
     }
 }

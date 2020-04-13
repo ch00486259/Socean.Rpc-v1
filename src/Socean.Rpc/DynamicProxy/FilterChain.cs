@@ -60,20 +60,20 @@ namespace Socean.Rpc.DynamicProxy
         private readonly ConcurrentDictionary<string, Invocation> _invocationDictionary = new ConcurrentDictionary<string, Invocation>();
         private readonly ConcurrentDictionary<string, string> _assemblyTagDictionary = new ConcurrentDictionary<string, string>();
 
-        internal void RegisterServices(Assembly assembly, IRpcSerializer rpcSerializer)
+        internal void RegisterServices(Assembly assembly, IBinarySerializer serializer)
         {
-            if (rpcSerializer == null)
-                throw new ArgumentNullException("rpcSerializer");
+            if (serializer == null)
+                throw new ArgumentNullException(nameof(serializer));
 
             if (assembly == null)
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
 
             if (!_assemblyTagDictionary.TryAdd(assembly.FullName, assembly.Location))
                 return;
 
             var serviceTypeList = ResolveServiceTypeList(assembly) ?? new List<Tuple<Type, RpcServiceAttribute>>();
 
-            RegisterServices(serviceTypeList, rpcSerializer);
+            RegisterServices(serviceTypeList, serializer);
         }
 
         private List<Tuple<Type, RpcServiceAttribute>> ResolveServiceTypeList(Assembly assembly)
@@ -86,7 +86,7 @@ namespace Socean.Rpc.DynamicProxy
                 .ToList();
         }
 
-        private void RegisterServices(List<Tuple<Type, RpcServiceAttribute>> serviceTypeList, IRpcSerializer rpcSerializer)
+        private void RegisterServices(List<Tuple<Type, RpcServiceAttribute>> serviceTypeList, IBinarySerializer serializer)
         {
             foreach (var tuple in serviceTypeList)
             {
@@ -111,7 +111,7 @@ namespace Socean.Rpc.DynamicProxy
                             actionName = methodInfo.Name;
                         }
 
-                        RegisterService(serviceName, actionName, service, serviceType, methodInfo, rpcSerializer);
+                        RegisterService(serviceName, actionName, service, serviceType, methodInfo, serializer);
                     }
                 }
                 catch (Exception ex)
@@ -121,7 +121,7 @@ namespace Socean.Rpc.DynamicProxy
             }
         }
 
-        private void RegisterService(string serviceName, string actionName, object service, Type serviceType, MethodInfo methodInfo, IRpcSerializer rpcSerializer)
+        private void RegisterService(string serviceName, string actionName, object service, Type serviceType, MethodInfo methodInfo, IBinarySerializer serializer)
         {
             var typeArray = DynamicProxyHelper.GetParameterTypes(methodInfo.GetParameters());
             if (typeArray.Length > 10)
@@ -130,7 +130,7 @@ namespace Socean.Rpc.DynamicProxy
             var parameterTupleType = CustomTuple.CreateType(typeArray);
             var title = DynamicProxyHelper.FormatTitle(serviceName, actionName, typeArray, methodInfo.ReturnType);
 
-            var invocation = new Invocation(title, serviceType, methodInfo, parameterTupleType, rpcSerializer);
+            var invocation = new Invocation(title, serviceType, methodInfo, parameterTupleType, serializer);
             _invocationDictionary.TryAdd(invocation.Key, invocation);
 
             LogAgent.Info(string.Format("RegisterService -> {0}", title));
@@ -139,7 +139,7 @@ namespace Socean.Rpc.DynamicProxy
         public void Do(ServiceContext context, FilterChain filterChain)
         {
             var title = context.Request.Title;
-            var content = context.Request.Content;
+            var contentBytes = context.Request.ContentBytes;
 
             _invocationDictionary.TryGetValue(title, out var _invocation);
             if (_invocation == null)
@@ -150,8 +150,8 @@ namespace Socean.Rpc.DynamicProxy
 
             try
             {
-                var responseString = _invocation.Proceed(content);
-                context.Response.WriteString(responseString);
+                var responseBytes = _invocation.Proceed(contentBytes);
+                context.Response.WriteBytes(responseBytes);
             }
             catch
             {

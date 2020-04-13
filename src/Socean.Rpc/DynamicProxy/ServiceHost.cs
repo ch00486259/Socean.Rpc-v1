@@ -10,9 +10,9 @@ namespace Socean.Rpc.DynamicProxy
         private readonly FilterChain _filterChain = new FilterChain();
         private readonly FinalProcessFilter _processFilter = new FinalProcessFilter();
 
-        public void RegisterServices(Assembly assembly, IRpcSerializer rpcSerializer)
+        public void RegisterServices(Assembly assembly, IBinarySerializer serializer)
         {
-            _processFilter.RegisterServices(assembly, rpcSerializer);
+            _processFilter.RegisterServices(assembly, serializer);
         }
 
         public void RegisterFilter(IServiceFilter filter)
@@ -34,7 +34,7 @@ namespace Socean.Rpc.DynamicProxy
 
     public interface IServiceHost
     {
-        void RegisterServices(Assembly assembly, IRpcSerializer rpcSerializer);
+        void RegisterServices(Assembly assembly, IBinarySerializer serializer);
 
         void RegisterFilter(IServiceFilter filter);
     }

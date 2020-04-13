@@ -20,7 +20,7 @@ namespace Socean.Rpc.DynamicProxy
         public Task<ResponseBase> Process(FrameData frameData)
         {
             if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
-                return Task.FromResult<ResponseBase>(new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR));
+                return Task.FromResult<ResponseBase>(new ErrorMessageResponse((byte)ResponseCode.SERVICE_TITLE_ERROR, "service title is null"));
 
             var response = _serviceHost.DoFilterChain(frameData);
             if (response == null)

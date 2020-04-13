@@ -4,26 +4,13 @@ namespace Socean.Rpc.Core.Client
 {
     public sealed partial class FastRpcClient
     {
-        public string QueryString(string title, string content = null, string extention = null, bool throwIfErrorResponseCode = false)
+        public byte[] QueryBytes(string title, byte[] contentBytes = null, string extention = null, bool throwIfErrorResponseCode = true)
         {
-            var encoding = RpcExtentionSettings.DefaultEncoding;
+            var encoding = NetworkSettings.TitleExtentionEncoding;
 
             var frameData = Query(
                 encoding.GetBytes(title),
-                content == null ? FrameFormat.EmptyBytes : encoding.GetBytes(content),
-                extention == null ? FrameFormat.EmptyBytes : encoding.GetBytes(extention),
-                throwIfErrorResponseCode);
-
-            return frameData.ReadContentAsString();
-        }
-
-        public byte[] QueryBytes(string title, string content = null, string extention = null, bool throwIfErrorResponseCode = false)
-        {
-            var encoding = RpcExtentionSettings.DefaultEncoding;
-
-            var frameData = Query(
-                encoding.GetBytes(title),
-                content == null ? FrameFormat.EmptyBytes : encoding.GetBytes(content),
+                contentBytes ?? FrameFormat.EmptyBytes,
                 extention == null ? FrameFormat.EmptyBytes : encoding.GetBytes(extention),
                 throwIfErrorResponseCode);
 

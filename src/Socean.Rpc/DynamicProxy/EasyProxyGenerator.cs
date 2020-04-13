@@ -23,12 +23,12 @@ namespace Socean.Rpc.DynamicProxy
             InterfaceType = typeof(T);
         }
 
-        public static T Create(IPAddress ip, int port, IRpcSerializer rpcSerializer,string extention = null)
+        public static T Create(IPAddress ip, int port, IBinarySerializer serializer,string extention = null)
         {
             if (ProxyType == null)
             {
-                if (rpcSerializer == null)
-                    throw new ArgumentNullException(nameof(rpcSerializer));
+                if (serializer == null)
+                    throw new ArgumentNullException(nameof(serializer));
 
                 if (!InterfaceType.IsInterface)
                     throw new ArgumentException(string.Format("[{0}] is not valid for {1}.Create,only interface type is valid", InterfaceType, typeof(EasyProxyGenerator<T>).Name));
@@ -55,7 +55,7 @@ namespace Socean.Rpc.DynamicProxy
             proxy.__Port = port;
             proxy.__InterfaceType = InterfaceType;
             proxy.__Extention = extention;
-            proxy.__RpcSerializer = rpcSerializer;
+            proxy.__BinarySerializer = serializer;
 
             return proxy as T;
         }

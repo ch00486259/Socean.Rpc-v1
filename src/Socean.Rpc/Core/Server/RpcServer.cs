@@ -191,10 +191,10 @@ namespace Socean.Rpc.Core.Server
             ResponseBase response = null;
 
             if (frameData.TitleBytes == null || frameData.TitleBytes.Length == 0)
-                response = new ErrorResponse((byte)ResponseCode.SERVICE_TITLE_ERROR);
+                response = new ErrorMessageResponse((byte)ResponseCode.SERVICE_TITLE_ERROR,"service title is null or empty");
 
             if (messageProcessor == null)
-                response = new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
+                response = new ErrorMessageResponse((byte)ResponseCode.MESSAGE_PROCESSOR_EMPTY,"message processor is null");
 
             try
             {
@@ -214,7 +214,7 @@ namespace Socean.Rpc.Core.Server
             }
             catch
             {
-                response = new ErrorResponse((byte)ResponseCode.SERVER_INTERNAL_ERROR);
+                response = new ErrorMessageResponse((byte)ResponseCode.SERVER_INTERNAL_ERROR,"server internal error");
             }
 
             var responseExtention = response.HeaderExtentionBytes ?? FrameFormat.EmptyBytes;

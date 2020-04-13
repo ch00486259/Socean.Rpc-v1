@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Socean.Rpc.Core
 {
@@ -90,6 +91,10 @@ namespace Socean.Rpc.Core
         public static CommunicationMode ServerProcessMode { get; set; } = CommunicationMode.Async;
 
         public static bool HighResponse { get; set; }
+
+        internal static Encoding ErrorContentEncoding { get; } = Encoding.UTF8;
+
+        internal static Encoding TitleExtentionEncoding { get; } = Encoding.UTF8;
 
         internal static byte[] GetClientKeepAliveInfo()
         {

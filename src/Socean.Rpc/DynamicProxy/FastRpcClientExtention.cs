@@ -7,30 +7,29 @@ namespace Socean.Rpc.DynamicProxy
 {
     internal static class FastRpcClientExtention
     {
-        internal static object QueryInternal(this FastRpcClient fastRpcClient, string title, ICustomTuple customTuple, Type returnType, IRpcSerializer rpcSerializer, string extention = null, bool throwIfErrorResponseCode = false)
+        internal static object QueryInternal(this FastRpcClient fastRpcClient, string title, ICustomTuple customTuple, Type returnType, IBinarySerializer serializer, string extention = null, bool throwIfErrorResponseCode = true)
         {
-            if (rpcSerializer == null)
-                throw new ArgumentNullException(nameof(rpcSerializer));
+            if (serializer == null)
+                throw new ArgumentNullException(nameof(serializer));
 
             if (customTuple == null)
                 throw new ArgumentNullException(nameof(customTuple));
 
-            var encoding = RpcExtentionSettings.DefaultEncoding;
+            var encoding = NetworkSettings.TitleExtentionEncoding;
 
             var response = fastRpcClient.Query(
                 encoding.GetBytes(title),
-                encoding.GetBytes(rpcSerializer.Serialize(customTuple)),
+                serializer.Serialize(customTuple),
                 extention == null ? FrameFormat.EmptyBytes : encoding.GetBytes(extention),
                 throwIfErrorResponseCode);
 
             if (returnType == typeof(void))
                 return null;
 
-            var responseContent = response.ReadContentAsString();
-            if (string.IsNullOrEmpty(responseContent))
+            if (response.ContentBytes == null)
                 return null;
 
-            return rpcSerializer.Deserialize(responseContent, returnType);
+            return serializer.Deserialize(response.ContentBytes, returnType);
         }
     }
 }

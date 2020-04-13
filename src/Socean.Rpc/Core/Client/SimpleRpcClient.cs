@@ -106,7 +106,9 @@ namespace Socean.Rpc.Core.Client
             if (rmc.ThrowIfErrorResponseCode)
             {
                 if (receiveData.StateCode != (byte)ResponseCode.OK)
-                    throw new RpcException("SimpleRpcClient QueryAsync failed,error code:" + receiveData.StateCode);
+                    throw new RpcException(string.Format("SimpleRpcClient QueryAsync failed,error code:{0},message:{1}",
+                       receiveData.StateCode,
+                       NetworkSettings.ErrorContentEncoding.GetString(receiveData.ContentBytes ?? FrameFormat.EmptyBytes)));
             }
 
             return receiveData;
@@ -154,7 +156,9 @@ namespace Socean.Rpc.Core.Client
             if (rmc.ThrowIfErrorResponseCode)
             {
                 if (receiveData.StateCode != (byte)ResponseCode.OK)
-                    throw new RpcException("SimpleRpcClient Query failed,error code:" + receiveData.StateCode);
+                    throw new RpcException(string.Format("SimpleRpcClient Query failed,error code:{0},message:{1}", 
+                        receiveData.StateCode,
+                        NetworkSettings.ErrorContentEncoding.GetString(receiveData.ContentBytes ?? FrameFormat.EmptyBytes)));
             }
 
             return receiveData;

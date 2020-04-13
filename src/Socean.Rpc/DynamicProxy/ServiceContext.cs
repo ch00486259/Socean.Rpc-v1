@@ -23,55 +23,63 @@ namespace Socean.Rpc.DynamicProxy
     {
         public FrameData OriginalFrameData { get; }
         public string Title { get; private set; }
-        public string Content { get; private set; }
+        public byte[] ContentBytes { get; private set; }
         public string HeaderExtention { get; private set; }
 
         public ServiceRequest(FrameData frameData)
         {
             OriginalFrameData = frameData;
 
-            var encoding = RpcExtentionSettings.DefaultEncoding;
+            var encoding = NetworkSettings.TitleExtentionEncoding;
+
             Title = encoding.GetString(frameData.TitleBytes);
-            Content = encoding.GetString(frameData.ContentBytes);
-            HeaderExtention = encoding.GetString(frameData.HeaderExtentionBytes);
+            ContentBytes = frameData.ContentBytes;
+            HeaderExtention = frameData.HeaderExtentionBytes == null ? string.Empty : encoding.GetString(frameData.HeaderExtentionBytes);
         }
 
         internal void DecryptMessage(byte[] password)
         {
-            Content = EncryptHelper.AesDecrypt(Content, password);
+            ContentBytes = EncryptHelper.AesDecrypt(ContentBytes, password);
             HeaderExtention = EncryptHelper.AesDecrypt(HeaderExtention, password);
         }
     }
 
     public class ServiceResponse
     {
-        public string Content { get; private set; }
+        public byte[] ContentBytes { get; private set; }
         public string HeaderExtention { get; private set; }
         public byte Code { get; private set; }
 
-        public void WriteString(string content, string extention = null)
+        //public void WriteString(string content, string extention = null)
+        //{
+        //    Content = content;
+        //    HeaderExtention = extention;
+        //    Code = 0;
+        //}
+
+        public void WriteBytes(byte[] content, string extention = null)
         {
-            Content = content;
+            ContentBytes = content;
             HeaderExtention = extention;
             Code = 0;
         }
 
         public void WriteError(byte errorCode,string message = null)
         {
-            Content = message;
+            ContentBytes = NetworkSettings.ErrorContentEncoding.GetBytes(message ?? string.Empty) ;
             HeaderExtention = null;
             Code = errorCode;
         }
 
         internal ResponseBase FlushFinal()
         {
-            var encoding = RpcExtentionSettings.DefaultEncoding;
-            return new CustomResponse(encoding.GetBytes(HeaderExtention ?? string.Empty), encoding.GetBytes(Content ?? string.Empty) ,  Code);
+            var encoding = NetworkSettings.TitleExtentionEncoding;
+            return new CustomResponse(HeaderExtention == null ? null: encoding.GetBytes(HeaderExtention), ContentBytes ?? FrameFormat.EmptyBytes,  Code);
         }
 
         internal void EncryptMessage(byte[] password)
         {
-            Content = EncryptHelper.AesEncrypt(Content, password);
+            ContentBytes = EncryptHelper.AesEncrypt(ContentBytes, password);
             HeaderExtention = EncryptHelper.AesEncrypt(HeaderExtention, password);
         }
     }

@@ -13,7 +13,7 @@ namespace Socean.Rpc.DynamicProxy
 
             using (var fastRpcClient = new FastRpcClient(proxyTarget.__IP, proxyTarget.__Port))
             {
-                return fastRpcClient.QueryInternal(title, customTuple, returnType, proxyTarget.__RpcSerializer, throwIfErrorResponseCode: true,extention: proxyTarget.__Extention);
+                return fastRpcClient.QueryInternal(title, customTuple, returnType, proxyTarget.__BinarySerializer, throwIfErrorResponseCode: true,extention: proxyTarget.__Extention);
             }
         }
     }   

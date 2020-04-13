@@ -19,13 +19,13 @@ namespace Socean.Rpc.Core
         public byte Code { get; protected set; }
     }
 
-    public class ErrorResponse : ResponseBase
-    {
-        public ErrorResponse(byte code) : base(FrameFormat.EmptyBytes, FrameFormat.EmptyBytes, code)
-        {
+    //public class ErrorResponse : ResponseBase
+    //{
+    //    public ErrorResponse(byte code) : base(FrameFormat.EmptyBytes, FrameFormat.EmptyBytes, code)
+    //    {
 
-        }
-    }
+    //    }
+    //}
 
     public class BytesResponse : ResponseBase
     {
@@ -53,6 +53,16 @@ namespace Socean.Rpc.Core
         public CustomResponse(byte[] extentionBytes, byte[] contentBytes, byte code) : base(extentionBytes, contentBytes, code)
         {
 
+        }
+    }
+
+    public class ErrorMessageResponse : ResponseBase
+    {
+        public string Message { get; }
+
+        public ErrorMessageResponse(byte code, string message = null) : base(FrameFormat.EmptyBytes, NetworkSettings.ErrorContentEncoding.GetBytes(message ?? string.Empty), code)
+        {
+            Message = message ?? string.Empty;
         }
     }
 }

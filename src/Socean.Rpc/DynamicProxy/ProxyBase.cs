@@ -9,6 +9,6 @@ namespace Socean.Rpc.DynamicProxy
         public int __Port;
         public Type __InterfaceType;
         public string __Extention;
-        public IRpcSerializer __RpcSerializer;
+        public IBinarySerializer __BinarySerializer;
     }
 }

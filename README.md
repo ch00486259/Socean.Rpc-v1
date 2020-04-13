@@ -18,18 +18,20 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
   
   1.定义序列化器和消息处理器
     
-    public class RpcSerializer : Socean.Rpc.DynamicProxy.IRpcSerializer
+    public class RpcSeralizer : Socean.Rpc.DynamicProxy.IBinarySerializer
     {
-        public object Deserialize(string content, Type type)
+        public object Deserialize(byte[] contentBytes, Type type)
         {
+            var content = Encoding.UTF8.GetString(contentBytes);
             return Newtonsoft.Json.JsonConvert.DeserializeObject(content, type);
         }
 
-        public string Serialize(object obj)
+        public byte[] Serialize(object obj)
         {
-            return Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+            var content = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+            return Encoding.UTF8.GetBytes(content);
         }
-    }   
+    }
     
     public class CustomMessageProcessor : Socean.Rpc.DynamicProxy.EasyProxyMessageProcessor
     {
@@ -74,16 +76,18 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
  
   1.定义序列化器
   
-    public class RpcSerializer : Socean.Rpc.DynamicProxy.IRpcSerializer
+    public class RpcSeralizer : Socean.Rpc.DynamicProxy.IBinarySerializer
     {
-        public object Deserialize(string content, Type type)
+        public object Deserialize(byte[] contentBytes, Type type)
         {
+            var content = Encoding.UTF8.GetString(contentBytes);
             return Newtonsoft.Json.JsonConvert.DeserializeObject(content, type);
         }
 
-        public string Serialize(object obj)
+        public byte[] Serialize(object obj)
         {
-            return Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+            var content = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+            return Encoding.UTF8.GetBytes(content);
         }
     }
     

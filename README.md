@@ -50,8 +50,8 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
         public double Price { get; set; }
     }
 
-    [RpcService]
-    public class BookService
+    [RpcService(ServiceName="IBookService")]  //如果不设置ServiceName,默认为类名
+    public class BookService                  //此处可继承IBookService，也可不继承，但两者的ServiceName必须一致
     {
         public bool RegisterForSale(Book book)
         {
@@ -93,7 +93,7 @@ Socean.RPC是一个高效的rpc框架，框架特点是稳定和高效，在普�
     
    2.定义服务接口 
    
-    [RpcProxy(ServiceName = "BookService")]
+    [RpcProxy(ServiceName = "IBookService")]   //如果不设置ServiceName,默认为接口名
     public interface IBookService
     {
         bool RegisterForSale(Book book);

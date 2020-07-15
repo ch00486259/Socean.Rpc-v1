@@ -141,101 +141,10 @@
             
             serviceHost.RegisterFilter(new LogFilter());
         }
-    }
-        
-        
- -------------------------------------------------------------------
-  二、常规用法之底层函数
+    }              
   
-  如果想重新封装一套动态代理，或追求更高的收发效率，可使用底层函数
-  
-  服务端 :
-
-  1.定义实体
-  
-    public class Book
-    {
-        public string Name { get; set; }
-        
-        public double Price { get; set; }
-    } 
- 
-  2.定义消息处理器
- 
-     public class DefaultMessageProcessor : IMessageProcessor
-     {
-          public void Init()
-          {          
-          }
-
-          public async Task<ResponseBase> Process(Socean.Rpc.Core.Message.FrameData frameData)
-          {
-              var title = Encoding.UTF8.GetString(frameData.TitleBytes);
-              if (title == "/books/namechange")
-              {
-                  var content = Encoding.UTF8.GetString(frameData.ContentBytes);                 
-                  var book = Newtonsoft.Json.JsonConvert.DeserializeObject<Book>(content);
-                  book.Name = "new name";
-
-                  var responseContent = Newtonsoft.Json.JsonConvert.SerializeObject(book);
-                  return new BytesResponse(Encoding.UTF8.GetBytes(responseContent));
-              }           
-
-              return new ErrorResponse((byte)ResponseCode.SERVICE_NOT_FOUND);
-          }
-      }
-
-
-  3.启动服务
-  
-    var server = new RpcServer();
-    server.Bind(IPAddress.Any, 11111);       
-    server.Start<DefaultMessageProcessor>();  
-  
-  -------------------------------------------------------------------
-
-  客户端:
-  
-  1.定义实体
-  
-    public class Book
-    {
-        public string Name { get; set; }
-        
-        public double Price { get; set; }
-    }
- 
- 
-  2.执行同步调用
-  
-    public Book ChangeBookName(Book book)
-    {
-        using (var rpcClient = new FastRpcClient(IPAddress.Parse("127.0.0.1"), 11111))
-        {
-            var requestContent = JsonConvert.SerializeObject(book);
-            var response = rpcClient.Query(Encoding.UTF8.GetBytes("/books/namechange"), Encoding.UTF8.GetBytes(requestContent));
-            var content = Encoding.UTF8.GetString(response.ContentBytes);
-            return JsonConvert.DeserializeObject<Book>(content);
-        }
-    }
-    
-  3.执行异步调用
-  
-    public async Task<Book> ChangeBookName(Book book)
-    {
-        using (var rpcClient = new FastRpcClient(IPAddress.Parse("127.0.0.1"), 11111))
-        {
-            var requestContent = JsonConvert.SerializeObject(book);
-            var response = await rpcClient.QueryAsync(Encoding.UTF8.GetBytes("/books/namechange"), Encoding.UTF8.GetBytes(requestContent));
-            var content = Encoding.UTF8.GetString(response.ContentBytes);
-            return JsonConvert.DeserializeObject<Book>(content);
-        }
-    }
-    
-  -------------------------------------------------------------------
   
   其他：
      
-  1.NetworkSettings类可修改连接超时时间等参数  
-  2.因Unity3D下无法使用Emit，所以EasyProxy不可用，请移除DynamicProxy空间下的文件即可
+  1.NetworkSettings类可修改连接超时时间等参数     
   

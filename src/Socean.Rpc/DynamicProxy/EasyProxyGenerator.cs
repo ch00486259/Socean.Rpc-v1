@@ -17,7 +17,7 @@ namespace Socean.Rpc.DynamicProxy
         static EasyProxyGenerator()
         {
             AssemblyName assemblyName = new AssemblyName("Socean.Rpc.EasyProxy");
-            AssemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
             ModuleBuilder = AssemblyBuilder.DefineDynamicModule(assemblyName.Name);
             DefaultInterceptor = new EasyProxyInterceptor();
             InterfaceType = typeof(T);
@@ -74,7 +74,7 @@ namespace Socean.Rpc.DynamicProxy
             DynamicProxyHelper.DefineConstructor(typeBuilder, fieldBuilder);
             DynamicProxyHelper.DefineMethods(typeBuilder, fieldBuilder, interfaceType, interceptMethodInfo);
 
-            return typeBuilder.CreateType();
+            return typeBuilder.CreateTypeInfo().AsType();
         }
     }
 }

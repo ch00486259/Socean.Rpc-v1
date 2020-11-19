@@ -3,6 +3,13 @@
 框架特点:
 高性能、稳定、支持异步、资源占用很小
   
+  
+  ## **Nuget**   
+  
+  install-package Socean.Rpc
+  
+  
+  
   使用简介
   -------------------------------------------------------------------
   一、常规用法之EasyProxy
@@ -13,7 +20,7 @@
   
   1.定义序列化器和消息处理器
     
-    public class RpcSeralizer : Socean.Rpc.DynamicProxy.IBinarySerializer
+    public class RpcSerializer : Socean.Rpc.DynamicProxy.IBinarySerializer
     {
         public object Deserialize(byte[] contentBytes, Type type)
         {
@@ -63,7 +70,7 @@
  3.启动服务
  
     var server = new RpcServer();
-    server.Bind(IPAddress.Parse("127.0.0.1"), 11111);
+    server.Bind(IPAddress.Parse("0.0.0.0"), 11111);
     server.Start<CustomMessageProcessor>();
  
  
@@ -71,7 +78,7 @@
  
   1.定义序列化器
   
-    public class RpcSeralizer : Socean.Rpc.DynamicProxy.IBinarySerializer
+    public class RpcSerializer : Socean.Rpc.DynamicProxy.IBinarySerializer
     {
         public object Deserialize(byte[] contentBytes, Type type)
         {

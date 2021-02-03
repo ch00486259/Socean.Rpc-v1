@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
-{
+{   
     public sealed class SimpleRpcClient: TcpTransportHostBase, IClient
     {
         public IPAddress ServerIP { get; }
@@ -23,6 +23,9 @@ namespace Socean.Rpc.Core.Client
         /// 0 idle, 1 sync, 2 async
         /// </summary>
         private volatile int _queryState;
+
+        private readonly AsyncFrameDataFacade _asyncFrameDataFacade = new AsyncFrameDataFacade();
+
 
         public SimpleRpcClient(IPAddress ip, int port)
         {
@@ -81,7 +84,8 @@ namespace Socean.Rpc.Core.Client
                 CheckTransport();
 
                 _requestMessageConstructor.ConstructCurrentMessage(titleBytes, contentBytes, extentionBytes, throwIfErrorResponseCode);
-                var frameData = await QueryAsyncInternal(_requestMessageConstructor).ConfigureAwait(false);
+                await QueryAsyncInternal(_requestMessageConstructor, _asyncFrameDataFacade).ConfigureAwait(false);
+                var frameData = _asyncFrameDataFacade.FrameData;
                 _requestMessageConstructor.ClearCurrentMessage();
 
                 return frameData;
@@ -92,14 +96,15 @@ namespace Socean.Rpc.Core.Client
             }
         }
                
-        private async Task<FrameData> QueryAsyncInternal(RequestMessageConstructor rmc)
+        private async Task QueryAsyncInternal(RequestMessageConstructor rmc, AsyncFrameDataFacade asyncFrameDataFacade)
         {
-            _asyncQueryContext.Reset(rmc.MessageId);
+            _asyncQueryContext.Reset();
             _transport.SendAsync(rmc.SendBuffer, rmc.MessageByteCount);            
-            var receiveData = await _asyncQueryContext.WaitForResult(rmc.MessageId, NetworkSettings.ReceiveTimeout).ConfigureAwait(false);
+            await _asyncQueryContext.WaitForResult(NetworkSettings.ReceiveTimeout, asyncFrameDataFacade).ConfigureAwait(false);
+            var receiveData = asyncFrameDataFacade.FrameData;
             if (receiveData == null)
             {
-                _transport.Close();
+                //_transport.Close();
                 throw new RpcException("SimpleRpcClient QueryAsync failed, time is out");
             }
 
@@ -111,7 +116,7 @@ namespace Socean.Rpc.Core.Client
                        NetworkSettings.ErrorContentEncoding.GetString(receiveData.ContentBytes ?? FrameFormat.EmptyBytes)));
             }
 
-            return receiveData;
+            return ;
         }
 
         public FrameData Query(byte[] titleBytes, byte[] contentBytes, byte[] extentionBytes = null, bool throwIfErrorResponseCode = true)
@@ -144,12 +149,12 @@ namespace Socean.Rpc.Core.Client
 
         private FrameData QueryInternal(RequestMessageConstructor rmc)
         {
-            _syncQueryContext.Reset(rmc.MessageId);                 
+            _syncQueryContext.Reset();                 
             _transport.Send(rmc.SendBuffer, rmc.MessageByteCount);
-            var receiveData = _syncQueryContext.WaitForResult(rmc.MessageId, NetworkSettings.ReceiveTimeout);            
+            var receiveData = _syncQueryContext.WaitForResult(NetworkSettings.ReceiveTimeout);            
             if (receiveData == null)
             {
-                _transport.Close();
+                //_transport.Close();
                 throw new RpcException("SimpleRpcClient Query failed,time is out");
             }
 
@@ -183,6 +188,12 @@ namespace Socean.Rpc.Core.Client
 
         internal override void OnReceiveMessage(TcpTransport tcpTransport, FrameData frameData)
         {
+            if (frameData == null)
+                return;
+
+            if (frameData.MessageId != _requestMessageConstructor.MessageId)
+                return;
+
             if (_queryState == 1)
                 _syncQueryContext.OnReceiveResult(frameData);
 

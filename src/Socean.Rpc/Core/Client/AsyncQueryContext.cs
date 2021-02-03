@@ -13,24 +13,19 @@ namespace Socean.Rpc.Core.Client
         }
 
         private volatile FrameData _frameData;
-        private volatile int _waitingMessageId = -1;
         private volatile TaskCompletionSource<int> _taskCompletionSource;
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private const int DEFAULT_DELAY_MS = 10;
 
-        public void Reset(int messageId)
+        internal void Reset()
         {
-            _waitingMessageId = messageId;
             _frameData = null;
             _taskCompletionSource = new TaskCompletionSource<int>();
         }
 
-        public bool OnReceiveResult(FrameData frameData)
+        internal bool OnReceiveResult(FrameData frameData)
         {
             if (frameData == null)
-                return false;
-
-            if (_waitingMessageId != frameData.MessageId)
                 return false;
 
             _frameData = frameData;
@@ -39,15 +34,14 @@ namespace Socean.Rpc.Core.Client
             return true;
         }
 
-        public async Task<FrameData> WaitForResult(int messageId, int millisecondsTimeout)
+        internal async Task WaitForResult(int millisecondsTimeout,AsyncFrameDataFacade asyncFrameDataFacade)
         {
             if (millisecondsTimeout <= 0)
             {
-                var _receiveData = _frameData;
+                asyncFrameDataFacade.FrameData = _frameData;
                 _frameData = null;
-                _waitingMessageId = -1;
 
-                return _receiveData;
+                return;
             }
 
             _stopwatch.Restart();
@@ -70,9 +64,9 @@ namespace Socean.Rpc.Core.Client
 
             var receiveData = _frameData;
             _frameData = null;
-            _waitingMessageId = -1;
 
-            return receiveData;
+            asyncFrameDataFacade.FrameData = receiveData;
+            return;
         }
     }
 }

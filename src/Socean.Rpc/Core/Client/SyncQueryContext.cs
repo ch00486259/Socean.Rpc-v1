@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
@@ -14,24 +13,19 @@ namespace Socean.Rpc.Core.Client
 
         private readonly AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
         private volatile FrameData _frameData;
-        private volatile int _waitingMessageId = -1;
         private volatile bool _receivedOneSet = false;
 
-        public void Reset(int messageId)
+        internal void Reset()
         {
-            _waitingMessageId = messageId;
             _frameData = null;
 
             if (_receivedOneSet == false)
                 _autoResetEvent.Reset();
         }
 
-        public bool OnReceiveResult(FrameData frameData)
+        internal bool OnReceiveResult(FrameData frameData)
         {
             if (frameData == null)
-                return false;
-
-            if (_waitingMessageId != frameData.MessageId)
                 return false;
             
             _frameData = frameData;
@@ -40,13 +34,12 @@ namespace Socean.Rpc.Core.Client
             return true;
         }
 
-        public FrameData WaitForResult(int messageId, int millisecondsTimeout)
+        internal FrameData WaitForResult(int millisecondsTimeout)
         {
             if (millisecondsTimeout <= 0)
             {
                 var _receiveData = _frameData;
                 _frameData = null;
-                _waitingMessageId = -1;
 
                 return _receiveData;
             }
@@ -55,7 +48,6 @@ namespace Socean.Rpc.Core.Client
              
             var receiveData = _frameData;
             _frameData = null;
-            _waitingMessageId = -1;
 
             return receiveData;
         }        

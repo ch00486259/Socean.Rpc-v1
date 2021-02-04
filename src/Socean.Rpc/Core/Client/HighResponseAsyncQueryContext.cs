@@ -25,7 +25,7 @@ namespace Socean.Rpc.Core.Client
                 return false;
 
             _frameData = frameData;
-            _taskCompletionSource?.SetSignal();
+            _taskCompletionSource.SetSignal();
 
             return true;
         }

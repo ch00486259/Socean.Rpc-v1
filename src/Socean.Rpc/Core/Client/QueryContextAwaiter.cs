@@ -26,14 +26,21 @@ namespace Socean.Rpc.Core.Client
 
         private static void TimerCallback(object state)
         {
-            var source = (QueryContextAwaiter)state;
-            source.SetSignal(new TimeoutException());
+            try
+            {
+                var source = (QueryContextAwaiter)state;
+                source.SetSignal(new TimeoutException());
+            }
+            catch (Exception ex)
+            {
+                LogAgent.Error(ex.Message, ex);
+            }            
         }
 
         public int GetResult()
         {
             if (IsCompleted == false)
-                throw new Exception("get result failed,task is running");
+                throw new Exception("QueryContextAwaiter get result failed,task is running");
 
             if (this._resultException != null)
                 throw this._resultException;
@@ -49,7 +56,7 @@ namespace Socean.Rpc.Core.Client
         public void Reset()
         {
             if (_isDisposed == TrueCode)
-                throw new Exception("awaiter has been disposed");
+                throw new Exception("QueryContextAwaiter has been disposed");
 
             _continuation = null;
             _resultException = null;
@@ -94,6 +101,9 @@ namespace Socean.Rpc.Core.Client
                 return;
 
             this._timer.Change(milliseconds, Timeout.Infinite);
+
+            if (IsCompleted)
+                this._timer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
         public void Dispose()

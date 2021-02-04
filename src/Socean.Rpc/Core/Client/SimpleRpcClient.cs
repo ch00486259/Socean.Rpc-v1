@@ -14,7 +14,7 @@ namespace Socean.Rpc.Core.Client
         private readonly RequestMessageConstructor _requestMessageConstructor;
         private readonly TcpTransport _transport;
         private readonly SyncQueryContext _syncQueryContext;
-        private readonly AsyncQueryContext _asyncQueryContext;
+        private readonly IAsyncQueryContext _asyncQueryContext;
 
         internal bool? IsSocketConnected { get { return _transport.IsSocketConnected; } }
         internal TcpTransportState TransportState { get { return _transport.State; } }
@@ -35,7 +35,7 @@ namespace Socean.Rpc.Core.Client
             _transport = new TcpTransport(this, ServerIP, ServerPort);
             _requestMessageConstructor = new RequestMessageConstructor();
             _syncQueryContext = new SyncQueryContext();
-            _asyncQueryContext = new AsyncQueryContext();
+            _asyncQueryContext = new HighResponseAsyncQueryContext();
         }
 
         private void CheckTransport()

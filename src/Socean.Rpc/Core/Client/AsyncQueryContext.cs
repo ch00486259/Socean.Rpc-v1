@@ -5,7 +5,7 @@ using Socean.Rpc.Core.Message;
 
 namespace Socean.Rpc.Core.Client
 {
-    internal class AsyncQueryContext 
+    internal class AsyncQueryContext : IAsyncQueryContext
     {
         internal AsyncQueryContext()
         {
@@ -17,13 +17,13 @@ namespace Socean.Rpc.Core.Client
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private const int DEFAULT_DELAY_MS = 10;
 
-        internal void Reset()
+        public void Reset()
         {
             _frameData = null;
             _taskCompletionSource = new TaskCompletionSource<int>();
         }
 
-        internal bool OnReceiveResult(FrameData frameData)
+        public bool OnReceiveResult(FrameData frameData)
         {
             if (frameData == null)
                 return false;
@@ -34,7 +34,7 @@ namespace Socean.Rpc.Core.Client
             return true;
         }
 
-        internal async Task WaitForResult(int millisecondsTimeout,AsyncFrameDataFacade asyncFrameDataFacade)
+        public async Task WaitForResult(int millisecondsTimeout,AsyncFrameDataFacade asyncFrameDataFacade)
         {
             if (millisecondsTimeout <= 0)
             {
@@ -69,4 +69,13 @@ namespace Socean.Rpc.Core.Client
             return;
         }
     }
+
+    public interface IAsyncQueryContext
+    {
+        void Reset();
+
+        bool OnReceiveResult(FrameData frameData);
+
+        Task WaitForResult(int millisecondsTimeout, AsyncFrameDataFacade asyncFrameDataFacade);
+    }   
 }

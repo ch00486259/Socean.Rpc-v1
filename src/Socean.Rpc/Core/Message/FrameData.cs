@@ -1,6 +1,6 @@
 ﻿namespace Socean.Rpc.Core.Message
 {
-    internal class AsyncFrameDataFacade
+    public class AsyncFrameDataFacade
     {
         internal FrameData FrameData { get; set; }
     }

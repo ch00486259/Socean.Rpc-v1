@@ -66,7 +66,7 @@ namespace Socean.Rpc.Core.Client
             return _objectPoolPolicy.Create();
         }
 
-        public bool Return(T obj)
+        public bool TakeBack(T obj)
         {
             if (_objectPoolPolicy.CanReturn(obj) && _clientList.Count < NetworkSettings.ClientCacheSize)
             {
@@ -82,16 +82,27 @@ namespace Socean.Rpc.Core.Client
     {
         private static readonly ConcurrentDictionary<string, SimpleRpcClientPool> _poolDictionary = new ConcurrentDictionary<string, SimpleRpcClientPool>();
 
-        public static IClient Depool(IPAddress ip, int port)
+        public static SimpleRpcClient Depool(IPAddress ip, int port)
         {
             var factory = GetOrAddPool(ip, port);
             return factory.Get();
         }
 
-        public static bool Enpool(SimpleRpcClient rpcClient)
+        public static void Enpool(SimpleRpcClient rpcClient)
         {
             var factory = GetOrAddPool(rpcClient.ServerIP, rpcClient.ServerPort);
-            return factory.Return(rpcClient);
+            var cacheResult = factory.TakeBack(rpcClient);
+            if (cacheResult == false)
+            {
+                try
+                {
+                    rpcClient.Dispose();
+                }
+                catch
+                {
+                    LogAgent.Warn("SimpleRpcClient Dispose error");
+                }
+            }
         }
 
         private static SimpleRpcClientPool GetOrAddPool(IPAddress ip, int port)

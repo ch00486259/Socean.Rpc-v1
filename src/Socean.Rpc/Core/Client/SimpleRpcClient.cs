@@ -179,6 +179,15 @@ namespace Socean.Rpc.Core.Client
             {
 
             }
+
+            try
+            {
+                _asyncQueryContext.Dispose();
+            }
+            catch
+            {
+
+            }
         }
 
         public void Dispose()

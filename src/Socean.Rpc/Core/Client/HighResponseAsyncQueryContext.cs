@@ -49,5 +49,10 @@ namespace Socean.Rpc.Core.Client
             asyncFrameDataFacade.FrameData = receiveData;
             return;
         }
+
+        public void Dispose()
+        {
+            _taskCompletionSource.Dispose();
+        }
     }
 }
